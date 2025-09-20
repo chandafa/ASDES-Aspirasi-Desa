@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -20,37 +21,176 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { summarizeReport } from '@/ai/flows/summarize-report';
-import { Loader2, MapPin, Sparkles, Upload } from 'lucide-react';
-import { Label } from '@/components/ui/label';
+import { Loader2, MapPin, Sparkles, Upload, X } from 'lucide-react';
+import type { ReportPriority } from '@/lib/types';
+import { useAuth } from '@/components/providers/auth-provider';
+import { useRouter } from 'next/navigation';
+import { db } from '@/lib/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 const reportFormSchema = z.object({
   title: z.string().min(10, 'Judul minimal 10 karakter.').max(100, 'Judul maksimal 100 karakter.'),
   category: z.string({ required_error: 'Pilih kategori laporan.' }),
-  priority: z.string({ required_error: 'Pilih tingkat prioritas.' }),
+  priority: z.string({ required_error: 'Pilih tingkat prioritas.' }) as z.ZodType<ReportPriority>,
   description: z.string().min(20, 'Deskripsi minimal 20 karakter.'),
+  photos: z.array(z.string().url()).min(1, 'Unggah minimal satu foto.'),
+  location: z.object({
+    lat: z.number(),
+    lng: z.number(),
+    address: z.string().optional(),
+  }),
 });
 
 type ReportFormValues = z.infer<typeof reportFormSchema>;
 
+type LocationState = {
+    lat: number;
+    lng: number;
+    address?: string;
+} | null;
+
 export function ReportForm() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const router = useRouter();
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportFormSchema),
     defaultValues: {
       title: '',
       description: '',
+      photos: [],
+      priority: 'sedang',
     },
   });
 
   const [summary, setSummary] = useState('');
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [location, setLocation] = useState<LocationState>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadImageToHosting = useCallback(async (file: File): Promise<string | null> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadUrl = 'https://beruangrasa.academychan.my.id/upload.php';
+
+      try {
+          const response = await fetch(uploadUrl, {
+              method: 'POST',
+              body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}`);
+          }
+
+          const result = await response.json();
+
+          if (result.url) {
+            toast({ title: 'Gambar Berhasil Diunggah', description: 'Gambar Anda telah diunggah ke laporan.' });
+            return result.url;
+          } else {
+            throw new Error(result.error || 'URL tidak ditemukan di respons server.');
+          }
+          
+      } catch (error: any) {
+          console.error('Error uploading image:', error);
+          toast({ title: 'Gagal Mengunggah Gambar', description: error.message || 'Tidak dapat terhubung ke server upload.', variant: 'destructive' });
+          return null;
+      }
+  }, [toast]);
+
+  const handleFileSelect = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsUploading(true);
+    const uploadedUrls = [];
+    for (const file of Array.from(files)) {
+      const url = await uploadImageToHosting(file);
+      if (url) {
+        uploadedUrls.push(url);
+      }
+    }
+    const currentPhotos = form.getValues('photos');
+    form.setValue('photos', [...currentPhotos, ...uploadedUrls]);
+    setIsUploading(false);
+  };
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileSelect(event.target.files);
+  };
+  
+  const handleRemovePhoto = (index: number) => {
+    const currentPhotos = form.getValues('photos');
+    const newPhotos = [...currentPhotos];
+    newPhotos.splice(index, 1);
+    form.setValue('photos', newPhotos);
+  };
+
+  const handleLocation = () => {
+    setIsFetchingLocation(true);
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const newLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    address: `Lat: ${position.coords.latitude.toFixed(5)}, Lng: ${position.coords.longitude.toFixed(5)}`
+                };
+                setLocation(newLocation);
+                form.setValue('location', newLocation);
+                toast({ title: 'Lokasi Ditemukan', description: 'Lokasi Anda berhasil ditambahkan.' });
+                setIsFetchingLocation(false);
+            },
+            (error) => {
+                toast({ variant: 'destructive', title: 'Gagal Mendapatkan Lokasi', description: error.message });
+                setIsFetchingLocation(false);
+            }
+        );
+    } else {
+        toast({ variant: 'destructive', title: 'Geolocation Tidak Didukung', description: 'Browser Anda tidak mendukung geolokasi.' });
+        setIsFetchingLocation(false);
+    }
+  };
 
   async function onSubmit(data: ReportFormValues) {
-    toast({
-      title: 'Laporan Terkirim!',
-      description: 'Terima kasih, laporan Anda telah kami terima dan akan segera diproses.',
-    });
-    console.log(data);
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Anda harus login', description: 'Silakan login untuk mengirim laporan.' });
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, 'reports'), {
+            ...data,
+            createdBy: user.uid,
+            createdAt: serverTimestamp(),
+            status: 'pending',
+            timeline: [
+                {
+                    actorUid: user.uid,
+                    action: 'Laporan dibuat',
+                    message: '',
+                    timestamp: new Date().toISOString(),
+                }
+            ]
+        });
+
+        toast({
+            title: 'Laporan Terkirim!',
+            description: 'Terima kasih, laporan Anda telah kami terima dan akan segera diproses.',
+        });
+        
+        router.push('/dashboard/warga/reports');
+
+    } catch (error) {
+        console.error("Error adding document: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Gagal Menyimpan Laporan',
+            description: 'Terjadi kesalahan saat menyimpan laporan Anda. Silakan coba lagi.',
+        });
+    }
   }
 
   const handleSummarize = async () => {
@@ -81,6 +221,7 @@ export function ReportForm() {
     }
   };
 
+  const photos = form.watch('photos');
 
   return (
     <Form {...form}>
@@ -118,11 +259,11 @@ export function ReportForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="jalan-rusak">Jalan Rusak</SelectItem>
-                        <SelectItem value="jembatan-patah">Jembatan Patah</SelectItem>
-                        <SelectItem value="drainase-mampet">Drainase Mampet</SelectItem>
-                        <SelectItem value="lampu-jalan">Lampu Jalan</SelectItem>
-                        <SelectItem value="lainnya">Lainnya</SelectItem>
+                        <SelectItem value="Jalan Rusak">Jalan Rusak</SelectItem>
+                        <SelectItem value="Jembatan Patah">Jembatan Patah</SelectItem>
+                        <SelectItem value="Drainase Mampet">Drainase Mampet</SelectItem>
+                        <SelectItem value="Lampu Jalan">Lampu Jalan</SelectItem>
+                        <SelectItem value="Lainnya">Lainnya</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -197,32 +338,103 @@ export function ReportForm() {
                 <CardDescription>Bantu kami menemukan lokasi masalah lebih cepat.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid gap-2">
-                    <Label>Lokasi di Peta</Label>
-                    <div className="h-64 w-full rounded-md bg-secondary flex items-center justify-center">
-                        <div className='text-center text-muted-foreground'>
-                            <MapPin className="mx-auto h-12 w-12 mb-2" />
-                            <p>Placeholder Peta</p>
-                            <Button variant="link">Pilih Lokasi</Button>
-                        </div>
-                    </div>
-                </div>
-                 <div className="grid gap-2">
-                    <Label>Foto Pendukung</Label>
-                    <div className="h-32 w-full rounded-md border-2 border-dashed border-border flex items-center justify-center">
-                        <div className='text-center text-muted-foreground'>
-                            <Upload className="mx-auto h-8 w-8 mb-2" />
-                            <p>Seret & lepas file atau</p>
-                             <Button variant="link">Pilih File</Button>
-                        </div>
-                    </div>
-                 </div>
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={() => (
+                    <FormItem>
+                        <FormLabel>Lokasi di Peta</FormLabel>
+                        <Card>
+                            <CardContent className="p-4">
+                                {location ? (
+                                    <div>
+                                        <p className="text-sm font-medium">Lokasi Anda:</p>
+                                        <p className="text-sm text-muted-foreground">{location.address}</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-center h-24">
+                                        <p className="text-muted-foreground text-sm">Lokasi belum dipilih</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                            <CardFooter>
+                                <Button type="button" variant="outline" onClick={handleLocation} disabled={isFetchingLocation} className="w-full">
+                                    {isFetchingLocation ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />}
+                                    Dapatkan Lokasi Saat Ini
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                        <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="photos"
+                  render={() => (
+                    <FormItem>
+                        <FormLabel>Foto Pendukung</FormLabel>
+                        <FormControl>
+                            <div>
+                                <div 
+                                    className="h-32 w-full rounded-md border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:bg-secondary transition-colors"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    onDrop={(e) => { e.preventDefault(); handleFileSelect(e.dataTransfer.files); }}
+                                    onDragOver={(e) => e.preventDefault()}
+                                >
+                                    {isUploading ? (
+                                        <div className="text-center text-muted-foreground">
+                                            <Loader2 className="mx-auto h-8 w-8 mb-2 animate-spin" />
+                                            <p>Mengunggah...</p>
+                                        </div>
+                                    ) : (
+                                        <div className='text-center text-muted-foreground'>
+                                            <Upload className="mx-auto h-8 w-8 mb-2" />
+                                            <p>Seret & lepas file atau klik untuk memilih</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    className="hidden" 
+                                    accept="image/jpeg,image/png,image/webp"
+                                    multiple
+                                    onChange={handleFileChange}
+                                />
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                        {photos && photos.length > 0 && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                {photos.map((url, index) => (
+                                    <div key={index} className="relative group">
+                                        <Image src={url} alt={`Preview ${index + 1}`} width={200} height={150} className="rounded-md object-cover aspect-[4/3]" />
+                                        <Button 
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => handleRemovePhoto(index)}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </FormItem>
+                  )}
+                 />
             </CardContent>
         </Card>
         
         <div className="flex justify-end gap-2">
-            <Button variant="outline" type="button">Batal</Button>
-            <Button type="submit">Kirim Laporan</Button>
+            <Button variant="outline" type="button" onClick={() => form.reset()}>Batal</Button>
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Kirim Laporan
+            </Button>
         </div>
       </form>
     </Form>

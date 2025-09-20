@@ -1,16 +1,63 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, CheckCircle, FileText, MapPin, Users } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, CheckCircle, FileText, MapPin, Users, BarChart, Trophy, Construction, Droplets, Lightbulb } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { recentReports, reports, blogPosts } from "@/lib/data";
+import { blogPosts } from "@/lib/data";
 import { Logo } from "@/components/shared/logo";
 import { cn } from "@/lib/utils";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, limit, orderBy, query } from "firebase/firestore";
+import type { Report } from "@/lib/types";
+import { Progress } from "@/components/ui/progress";
 
-export default function Home() {
-  const totalReports = reports.length;
-  const resolvedReports = reports.filter((r) => r.status === "resolved").length;
+async function getRecentReports() {
+    try {
+        const reportsCollection = collection(db, 'reports');
+        const q = query(reportsCollection, orderBy('createdAt', 'desc'), limit(3));
+        const querySnapshot = await getDocs(q);
+        const reportsData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as Report));
+        return reportsData;
+    } catch (error) {
+        console.error("Error fetching recent reports: ", error);
+        return [];
+    }
+}
+
+async function getReportStats() {
+    try {
+        const reportsCollection = collection(db, 'reports');
+        const querySnapshot = await getDocs(reportsCollection);
+        const reports = querySnapshot.docs.map(doc => doc.data() as Report);
+        
+        const categoryCounts = reports.reduce((acc, report) => {
+            acc[report.category] = (acc[report.category] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const categoryRanking = Object.entries(categoryCounts)
+            .sort(([, a], [, b]) => b - a)
+            .map(([category, count]) => ({ category, count }));
+
+        return {
+            totalReports: reports.length,
+            resolvedReports: reports.filter((r) => r.status === "resolved").length,
+            categoryRanking: categoryRanking,
+        }
+    } catch (error) {
+        console.error("Error fetching report stats: ", error);
+        return { totalReports: 0, resolvedReports: 0, categoryRanking: [] };
+    }
+}
+
+
+export default async function Home() {
+  const recentReports = await getRecentReports();
+  const { totalReports, resolvedReports, categoryRanking } = await getReportStats();
   const totalArticles = blogPosts.length;
 
   const getStatusVariant = (status: string) => {
@@ -42,6 +89,13 @@ export default function Home() {
         return "";
     }
   };
+  
+    const categoryIcons: { [key: string]: React.ElementType } = {
+        'Jalan Rusak': Construction,
+        'Drainase Mampet': Droplets,
+        'Lampu Jalan': Lightbulb,
+    };
+
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -52,23 +106,26 @@ export default function Home() {
               <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_550px]">
                 <div className="flex flex-col justify-center space-y-4">
                   <div className="space-y-4">
-                    <h1 className="text-4xl font-semibold tracking-wide sm:text-5xl xl:text-4xl/none font-headline">
+                  <h1 className="text-2xl sm:text-4xl md:text-5xl font-semibold tracking-wide font-headline">
+
                       Suarakan Aspirasi, <br />
                       Bangun Desa Bersama
                     </h1>
-                    <p className="max-w-[420px] text-sm leading-relaxed font-normal text-white/80">
+                    <p className="max-w-[420px] text-sm leading-relaxed font-normal text-white/80 sm:text-base">
                       Aspirasi Desa adalah jembatan antara warga dan pemerintah desa 
                       untuk melaporkan dan menyelesaikan masalah infrastruktur secara 
                       transparan dan efisien.
                     </p>
                   </div>
-                  <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                    <Button
-                      asChild
-                      size="lg"
-                      variant="outline"
-                      className="rounded-lg min-h-11 border-white/50 text-white bg-transparent hover:bg-white/10 hover:text-white"
-                    >
+                  <div className="flex flex-col gap-2 w-full sm:flex-row sm:w-auto">
+
+                  <Button
+  asChild
+  size="lg"
+  variant="outline"
+  className="rounded-lg min-h-11 border-white/50 text-white bg-transparent hover:bg-white/10 hover:text-white w-full sm:w-auto"
+>
+
                       <Link href="/report/new">
                         <FileText className="mr-2" />
                         Ajukan Laporan
@@ -79,7 +136,7 @@ export default function Home() {
                       size="lg"
                       className="rounded-lg min-h-11 bg-white text-[#034032]  hover:bg-white/90"
                     >
-                      <Link href="/map">
+                      <Link href="/dashboard/warga/map">
                         <MapPin className="mr-2" />
                         Lihat Peta Masalah
                       </Link>
@@ -87,72 +144,63 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex items-center justify-center">
-                  <Image
-                    data-ai-hint="happy villagers"
-                    src="https://picsum.photos/seed/hero/550/400"
-                    width={550}
-                    height={400}
-                    alt="Hero"
-                    className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
-                  />
+                <Image
+  src="https://picsum.photos/seed/hero/550/400"
+  width={550}
+  height={400}
+  alt="Hero"
+  className="mx-auto aspect-video rounded-xl object-cover w-full max-w-xs sm:max-w-md lg:max-w-full"
+/>
+
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section id="stats" className="py-12 md:py-24 lg:py-32">
-          <div className="mx-4 md:mx-6 lg:mx-8">
-            <div className="rounded-2xl bg-white shadow-sm p-6 md:p-10">
-              <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-                <div className="space-y-2">
-                  <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
-                    Statistik Laporan Masalah
-                  </h2>
-                  <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                    Pantau jumlah laporan, masalah yang sudah diselesaikan, dan
-                    informasi terbaru dari warga secara transparan.
-                  </p>
-                </div>
-              </div>
-              <div className="grid gap-6 md:grid-cols-3">
-                <Card className="bg-teal-50 dark:bg-teal-900/50 border-teal-200 dark:border-teal-800 rounded-xl">
-                  <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-                    <div className="bg-teal-100 dark:bg-teal-900 rounded-full p-4 mb-4 ring-8 ring-teal-50 dark:ring-teal-900/50">
-                      <FileText className="h-8 w-8 text-teal-500" />
+        <section id="impact" className="py-12 md:py-24">
+            <div className="container px-4 md:px-6">
+                <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+                     <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary font-medium">
+                        Indikator Dampak
                     </div>
-                    <h3 className="text-4xl font-bold">{totalReports}</h3>
-                    <p className="text-muted-foreground mt-1">Total Laporan</p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-green-50 dark:bg-green-900/50 border-green-200 dark:border-green-800 rounded-xl">
-                  <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-                    <div className="bg-green-100 dark:bg-green-900 rounded-full p-4 mb-4 ring-8 ring-green-50 dark:ring-green-900/50">
-                      <CheckCircle className="h-8 w-8 text-green-500" />
-                    </div>
-                    <h3 className="text-4xl font-bold">{resolvedReports}</h3>
-                    <p className="text-muted-foreground mt-1">
-                      Masalah Teratasi
+                    <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
+                        Transparansi & Partisipasi Warga
+                    </h2>
+                    <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                        Lihat bagaimana partisipasi warga membawa perubahan nyata bagi kemajuan desa kita.
                     </p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-amber-50 dark:bg-amber-900/50 border-amber-200 dark:border-amber-800 rounded-xl">
-                  <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-                    <div className="bg-amber-100 dark:bg-amber-900 rounded-full p-4 mb-4 ring-8 ring-amber-50 dark:ring-amber-900/50">
-                      <Users className="h-8 w-8 text-amber-500" />
-                    </div>
-                    <h3 className="text-4xl font-bold">{totalArticles}</h3>
-                    <p className="text-muted-foreground mt-1">Artikel Berita</p>
-                  </CardContent>
-                </Card>
-              </div>
+                </div>
+                <div className="grid gap-6 md:grid-cols-3">
+                    <Card className="text-center">
+                        <CardContent className="p-6">
+                            <FileText className="h-10 w-10 mx-auto mb-4 text-primary" />
+                            <h3 className="text-4xl font-bold">{totalReports}</h3>
+                            <p className="text-muted-foreground mt-1">Total Laporan Diterima</p>
+                        </CardContent>
+                    </Card>
+                     <Card className="text-center">
+                        <CardContent className="p-6">
+                            <CheckCircle className="h-10 w-10 mx-auto mb-4 text-green-600" />
+                            <h3 className="text-4xl font-bold">{resolvedReports}</h3>
+                            <p className="text-muted-foreground mt-1">Masalah Terselesaikan</p>
+                        </CardContent>
+                    </Card>
+                     <Card className="text-center">
+                        <CardContent className="p-6">
+                            <Users className="h-10 w-10 mx-auto mb-4 text-blue-600" />
+                            <h3 className="text-4xl font-bold">125</h3>
+                            <p className="text-muted-foreground mt-1">Warga Terdaftar</p>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-          </div>
         </section>
+
 
         <section
           id="how-it-works"
-          className="w-full py-12 md:py-24 lg:py-32 bg-primary text-primary-foreground rounded-3xl"
+          className="w-full py-12 md:py-24 lg:py-32 bg-[#034032] text-primary-foreground rounded-3xl"
         >
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
@@ -209,6 +257,54 @@ export default function Home() {
             </div>
           </div>
         </section>
+        
+        <section id="open-data" className="w-full py-12 md:py-24 lg:py-32">
+             <div className="container px-4 md:px-6">
+                <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+                    <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary font-medium">
+                        Open Data Desa
+                    </div>
+                    <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
+                        Ranking Masalah Infrastruktur
+                    </h2>
+                    <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                        Data laporan warga yang diolah secara transparan untuk melihat prioritas pembangunan.
+                    </p>
+                </div>
+                <Card className="max-w-3xl mx-auto">
+                    <CardHeader>
+                        <CardTitle>Laporan Terbanyak per Kategori</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {categoryRanking.length > 0 ? (
+                            categoryRanking.map(({ category, count }, index) => {
+                                const Icon = categoryIcons[category] || FileText;
+                                const percentage = totalReports > 0 ? (count / totalReports) * 100 : 0;
+                                return (
+                                    <div key={category} className="space-y-2">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-2">
+                                                <Trophy className={cn("h-5 w-5", 
+                                                    index === 0 ? "text-amber-400" : 
+                                                    index === 1 ? "text-slate-400" :
+                                                    index === 2 ? "text-amber-700" : "text-muted-foreground"
+                                                )} />
+                                                <Icon className="h-5 w-5 text-muted-foreground" />
+                                                <span className="font-medium">{category}</span>
+                                            </div>
+                                            <span className="font-semibold">{count} Laporan</span>
+                                        </div>
+                                        <Progress value={percentage} aria-label={`${category} progress`} />
+                                    </div>
+                                );
+                            })
+                        ) : (
+                             <p className="text-muted-foreground text-center col-span-full py-4">Belum ada data laporan untuk ditampilkan.</p>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+        </section>
 
         <section id="recent-reports" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
@@ -221,55 +317,60 @@ export default function Home() {
               </p>
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {recentReports.slice(0, 3).map((report) => (
-                <Card
-                  key={report.id}
-                  className="overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-xl"
-                >
-                  <CardContent className="p-4">
-                    <Image
-                      data-ai-hint="damaged road"
-                      src={report.photos[0]}
-                      width={400}
-                      height={300}
-                      alt={report.title}
-                      className="aspect-video w-full rounded-md object-cover mb-4"
-                    />
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-lg truncate">
-                        {report.title}
-                      </h3>
-                      <Badge
-                        variant={getStatusVariant(report.status)}
-                        className={cn(
-                          "rounded-md",
-                          getStatusClass(report.status)
-                        )}
-                      >
-                        {report.status}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-                      {report.description}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{report.category}</span>
-                      <span>
-                        {new Date(report.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {recentReports.length > 0 ? (
+                recentReports.map((report) => (
+                    <Card
+                    key={report.id}
+                    className="overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-xl"
+                    >
+                    <CardContent className="p-4">
+                        <Image
+                        data-ai-hint="damaged road"
+                        src={report.photos[0]}
+                        width={400}
+                        height={300}
+                        alt={report.title}
+                        className="aspect-video w-full rounded-md object-cover mb-4"
+                        />
+                        <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-lg truncate">
+                            {report.title}
+                        </h3>
+                        <Badge
+                            variant={getStatusVariant(report.status)}
+                            className={cn(
+                            "rounded-md",
+                            getStatusClass(report.status)
+                            )}
+                        >
+                            {report.status}
+                        </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+                        {report.description}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{report.category}</span>
+                        <span>
+                            {report.createdAt.toDate().toLocaleDateString()}
+                        </span>
+                        </div>
+                    </CardContent>
+                    </Card>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center col-span-full">Belum ada laporan terbaru.</p>
+              )}
             </div>
           </div>
         </section>
       </main>
-      <footer className="bg-primary text-primary-foreground rounded-t-3xl">
+      <footer className="bg-[#034032] text-primary-foreground rounded-t-3xl">
         <div className="container flex flex-col items-center justify-between gap-4 py-6 md:h-24 md:flex-row md:py-0">
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
             <Logo />
-            <p className="text-center text-sm leading-loose text-primary-foreground/80 md:text-left">
+            <p className="text-center text-xs sm:text-sm leading-loose text-primary-foreground/80 md:text-left">
+
               Dibangun untuk memajukan desa.
             </p>
           </div>

@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export type User = {
   uid: string;
   name: string;
@@ -22,14 +24,14 @@ export type Report = {
   priority: ReportPriority;
   photos: string[];
   createdBy: string; // uid
-  createdAt: string;
+  createdAt: Timestamp;
   location: {
     lat: number;
     lng: number;
     address: string;
   };
   status: ReportStatus;
-  timeline: {
+  timeline?: {
     actorUid: string;
     action: string;
     message: string;

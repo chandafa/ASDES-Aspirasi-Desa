@@ -2,8 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { reports, users as mockUsers } from "@/lib/data";
 
 export function RecentReports() {
-    // Note: Data is still mocked. In a real app, you'd fetch this based on the authenticated user's ID
-    const userReports = reports.filter(r => r.createdBy === 'warga01');
+    const userReports = reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <div className="space-y-8">

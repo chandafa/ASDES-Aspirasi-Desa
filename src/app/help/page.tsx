@@ -5,6 +5,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import Image from "next/image";
 
 
 export default function HelpPage() {
@@ -27,7 +28,7 @@ export default function HelpPage() {
                     <AccordionItem value="item-1">
                         <AccordionTrigger>Bagaimana cara membuat laporan?</AccordionTrigger>
                         <AccordionContent>
-                        Anda dapat membuat laporan dengan mengklik tombol "Ajukan Laporan" di halaman utama atau dashboard Anda, lalu mengisi formulir yang disediakan.
+                        Anda dapat membuat laporan dengan mengklik tombol "Ajukan Laporan Baru" di dashboard Anda. Isi semua kolom yang diperlukan, seperti judul, deskripsi, lokasi, dan jangan lupa unggah foto sebagai bukti.
                         </AccordionContent>
                     </AccordionItem>
                     <AccordionItem value="item-2">
@@ -39,7 +40,18 @@ export default function HelpPage() {
                     <AccordionItem value="item-3">
                         <AccordionTrigger>Bagaimana cara melacak status laporan?</AccordionTrigger>
                         <AccordionContent>
-                        Semua laporan yang Anda buat akan muncul di dashboard Anda. Anda dapat melihat status terkininya di sana, mulai dari 'pending', 'in_progress', hingga 'resolved'.
+                        Semua laporan yang Anda buat akan muncul di halaman "Laporan Saya". Anda dapat melihat status terkininya di sana, mulai dari 'pending', 'in_progress', hingga 'resolved'.
+                        </AccordionContent>
+                    </AccordionItem>
+                     <AccordionItem value="item-4">
+                        <AccordionTrigger>Apa saja status laporan dan artinya?</AccordionTrigger>
+                        <AccordionContent>
+                            <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
+                                <li><strong>Pending:</strong> Laporan Anda telah diterima sistem dan sedang menunggu verifikasi oleh admin.</li>
+                                <li><strong>In Progress:</strong> Laporan Anda telah diverifikasi dan sedang dalam proses penanganan oleh tim terkait.</li>
+                                <li><strong>Resolved:</strong> Masalah yang Anda laporkan telah selesai ditangani.</li>
+                                <li><strong>Rejected:</strong> Laporan Anda ditolak, mungkin karena informasi tidak lengkap atau bukan wewenang kami.</li>
+                            </ul>
                         </AccordionContent>
                     </AccordionItem>
                     </Accordion>
@@ -48,12 +60,19 @@ export default function HelpPage() {
 
             <Card className="mt-8">
                 <CardHeader>
-                    <CardTitle>Video Tutorial</CardTitle>
+                    <CardTitle>Video Tutorial: Cara Mengajukan Laporan</CardTitle>
                     <CardDescription>Tonton video di bawah ini untuk panduan langkah demi langkah.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                        <p className="text-muted-foreground">Placeholder Video YouTube</p>
+                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                        <Image 
+                            data-ai-hint="tutorial video"
+                            src="https://picsum.photos/seed/tutorial/1280/720"
+                            alt="Video Tutorial Placeholder"
+                            width={1280}
+                            height={720}
+                            className="w-full h-full object-cover"
+                        />
                     </div>
                 </CardContent>
             </Card>

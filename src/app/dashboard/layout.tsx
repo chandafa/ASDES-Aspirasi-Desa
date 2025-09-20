@@ -1,34 +1,16 @@
+
 "use client";
 
-import Link from "next/link";
-import {
-  Home,
-  Map,
-  FileText,
-  Newspaper,
-  Settings,
-  LifeBuoy,
-} from "lucide-react";
-
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarProvider,
-  SidebarInset,
-  SidebarFooter,
-  SidebarSeparator,
-} from "@/components/ui/sidebar";
-import { UserNav } from "@/components/layout/user-nav";
-import { Logo } from "@/components/shared/logo";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import React from "react";
+import { SidebarProvider } from "@/components/ui/sidebar";
+
+// This is a mock function, replace with your actual role checking logic
+const isAdminUser = (email?: string | null) => {
+    return email === 'admin@desa.connect';
+};
 
 
 export default function DashboardLayout({
@@ -38,12 +20,27 @@ export default function DashboardLayout({
 }) {
     const { user, loading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
+    const isAdmin = isAdminUser(user?.email);
 
     React.useEffect(() => {
         if (!loading && !user) {
             router.push('/auth/login');
+            return;
         }
-    }, [user, loading, router]);
+
+        if (!loading && user) {
+            const isAdminPage = pathname.startsWith('/dashboard/admin');
+            const isWargaPage = pathname.startsWith('/dashboard/warga');
+
+            if (isAdmin && !isAdminPage) {
+                router.push('/dashboard/admin');
+            } else if (!isAdmin && !isWargaPage) {
+                router.push('/dashboard/warga');
+            }
+        }
+
+    }, [user, loading, router, isAdmin, pathname]);
 
     if (loading || !user) {
         return (
@@ -55,83 +52,7 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-        <Sidebar>
-          <SidebarHeader>
-            <Logo />
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Dashboard" isActive>
-                  <Link href="/dashboard/warga">
-                    <Home />
-                    <span>Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Laporan Saya">
-                  <Link href="#">
-                    <FileText />
-                    <span>Laporan Saya</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Peta Masalah">
-                  <Link href="#">
-                    <Map />
-                    <span>Peta Masalah</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Blog">
-                  <Link href="/blog">
-                    <Newspaper />
-                    <span>Blog</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarSeparator />
-          <SidebarFooter>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                 <SidebarMenuButton asChild tooltip="Pengaturan">
-                  <Link href="/settings">
-                    <Settings />
-                    <span>Pengaturan</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Bantuan">
-                  <Link href="/help">
-                    <LifeBuoy />
-                    <span>Bantuan</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-            <div className="flex items-center gap-2 p-2">
-                <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? ''} />
-                    <AvatarFallback>{user.displayName?.charAt(0) ?? user.email?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                    <span className="text-sm font-semibold">{user.displayName}</span>
-                    <span className="text-xs text-muted-foreground">{user.email}</span>
-                </div>
-            </div>
-          </SidebarFooter>
-        </Sidebar>
-        <SidebarInset>
-          <div className="p-4 sm:p-6 lg:p-8">
-            {children}
-          </div>
-        </SidebarInset>
+        {children}
     </SidebarProvider>
   );
 }
