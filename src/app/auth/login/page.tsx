@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -42,44 +43,48 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <div className='mb-4 flex justify-center'>
-            <Logo />
-          </div>
-          <CardTitle className="text-2xl text-center">Login</CardTitle>
-          <CardDescription className="text-center">
-            Masukkan email Anda untuk masuk ke akun Anda.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+    <div className="bg-[#034032] dark:bg-background">
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] px-4 py-12">
+        <Card className="w-full max-w-sm bg-[#F0F7F7] dark:bg-card shadow-none border-none">
+            <CardHeader>
+            <div className='mb-4 flex justify-center'>
+                <Logo />
             </div>
-            <div className="grid gap-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
-                <Link href="#" className="ml-auto inline-block text-sm underline">
-                  Lupa password?
-                </Link>
-              </div>
-              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <CardTitle className="text-2xl text-center">Login</CardTitle>
+            <CardDescription className="text-center">
+                Masukkan email Anda untuk masuk ke akun Anda.
+            </CardDescription>
+            </CardHeader>
+            <CardContent>
+            <form onSubmit={handleLogin} className="grid gap-4">
+                <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                <div className="flex items-center">
+                    <Label htmlFor="password">Password</Label>
+                    <Link href="/auth/forgot-password" className="ml-auto inline-block text-sm underline">
+                    Lupa password?
+                    </Link>
+                </div>
+                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full bg-[#034032] hover:bg-[#034032]/90" disabled={isLoading}>
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Login'}
+                </Button>
+            </form>
+            <div className="mt-4 text-center text-sm">
+                Belum punya akun?{' '}
+                <Button variant="link" asChild className='p-0'>
+                    <Link href="/auth/register">
+                    Daftar
+                    </Link>
+                </Button>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Login'}
-            </Button>
-          </form>
-          <div className="mt-4 text-center text-sm">
-            Belum punya akun?{' '}
-            <Link href="/auth/register" className="underline">
-              Daftar
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+        </Card>
+        </div>
     </div>
   );
 }

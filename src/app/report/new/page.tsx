@@ -25,16 +25,18 @@ export default function NewReportPage() {
   }
 
   return (
-    <div className="container py-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="space-y-2 mb-8">
-          <h1 className="text-3xl font-bold font-headline">Ajukan Laporan Baru</h1>
-          <p className="text-muted-foreground">
-            Sampaikan masalah infrastruktur di desa Anda. Isi formulir di bawah ini dengan lengkap.
-          </p>
+    <div className="bg-[#F0F7F7] dark:bg-background">
+        <div className="container py-8">
+            <div className="max-w-3xl mx-auto">
+                <div className="space-y-2 mb-8">
+                <h1 className="text-3xl font-bold font-headline">Ajukan Laporan Baru</h1>
+                <p className="text-muted-foreground">
+                    Sampaikan masalah infrastruktur di desa Anda. Isi formulir di bawah ini dengan lengkap.
+                </p>
+                </div>
+                <ReportForm />
+            </div>
         </div>
-        <ReportForm />
-      </div>
     </div>
   );
 }

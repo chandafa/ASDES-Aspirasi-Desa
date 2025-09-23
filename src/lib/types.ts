@@ -16,15 +16,24 @@ export type User = {
 export type ReportStatus = 'pending' | 'in_progress' | 'resolved' | 'rejected';
 export type ReportPriority = 'rendah' | 'sedang' | 'tinggi';
 
+export type ReportComment = {
+  userUid: string;
+  userName: string;
+  userAvatar: string;
+  text: string;
+  createdAt: string; // ISO String for Firestore compatibility
+};
+
 export type Report = {
   id: string;
   title: string;
+  slug: string;
   description: string;
   category: 'Jalan Rusak' | 'Jembatan Patah' | 'Drainase Mampet' | 'Lampu Jalan' | 'Lainnya';
   priority: ReportPriority;
   photos: string[];
   createdBy: string; // uid
-  createdAt: Timestamp;
+  createdAt: string; // Changed from Timestamp to string
   location: {
     lat: number;
     lng: number;
@@ -37,6 +46,7 @@ export type Report = {
     message: string;
     timestamp: string;
   }[];
+  comments?: ReportComment[];
 };
 
 export type BlogPost = {

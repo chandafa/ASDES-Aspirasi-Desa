@@ -21,6 +21,7 @@ import { Logo } from "@/components/shared/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/components/providers/auth-provider";
 import { WargaNav } from "../components/warga-nav";
+import DashboardMainLayout from "../main-layout";
 
 export default function WargaDashboardLayout({
   children,
@@ -72,9 +73,9 @@ export default function WargaDashboardLayout({
         </div>
         </SidebarFooter>
     </Sidebar>
-    <main className="flex-1 p-4 sm:p-6 lg:p-8">
+    <DashboardMainLayout>
         {children}
-    </main>
+    </DashboardMainLayout>
     </div>
   );
 }

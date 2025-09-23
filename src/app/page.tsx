@@ -11,16 +11,24 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, limit, orderBy, query } from "firebase/firestore";
 import type { Report } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
+import RecentReportsPagination from "@/app/components/recent-reports-pagination";
+import { Timestamp } from "firebase/firestore";
 
 async function getRecentReports() {
     try {
         const reportsCollection = collection(db, 'reports');
-        const q = query(reportsCollection, orderBy('createdAt', 'desc'), limit(3));
+        // Fetch more reports for pagination
+        const q = query(reportsCollection, orderBy('createdAt', 'desc'), limit(9));
         const querySnapshot = await getDocs(q);
-        const reportsData = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as Report));
+        const reportsData = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                // Convert Timestamp to a serializable format (ISO string)
+                createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+            } as Report;
+        });
         return reportsData;
     } catch (error) {
         console.error("Error fetching recent reports: ", error);
@@ -32,7 +40,7 @@ async function getReportStats() {
     try {
         const reportsCollection = collection(db, 'reports');
         const querySnapshot = await getDocs(reportsCollection);
-        const reports = querySnapshot.docs.map(doc => doc.data() as Report);
+        const reports = querySnapshot.docs.map(doc => doc.data() as Omit<Report, 'id' | 'createdAt'>);
         
         const categoryCounts = reports.reduce((acc, report) => {
             acc[report.category] = (acc[report.category] || 0) + 1;
@@ -59,37 +67,7 @@ export default async function Home() {
   const recentReports = await getRecentReports();
   const { totalReports, resolvedReports, categoryRanking } = await getReportStats();
   const totalArticles = blogPosts.length;
-
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case "resolved":
-        return "default";
-      case "in_progress":
-        return "secondary";
-      case "pending":
-        return "outline";
-      case "rejected":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
-
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "resolved":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "in_progress":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      case "pending":
-        return "bg-blue-100 text-blue-800 border-blue-300";
-      case "rejected":
-        return "bg-red-100 text-red-800 border-red-300";
-      default:
-        return "";
-    }
-  };
-  
+    
     const categoryIcons: { [key: string]: React.ElementType } = {
         'Jalan Rusak': Construction,
         'Drainase Mampet': Droplets,
@@ -316,70 +294,10 @@ export default async function Home() {
                 Lihat masalah yang baru-baru ini dilaporkan oleh warga desa.
               </p>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {recentReports.length > 0 ? (
-                recentReports.map((report) => (
-                    <Card
-                    key={report.id}
-                    className="overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-xl"
-                    >
-                    <CardContent className="p-4">
-                        <Image
-                        data-ai-hint="damaged road"
-                        src={report.photos[0]}
-                        width={400}
-                        height={300}
-                        alt={report.title}
-                        className="aspect-video w-full rounded-md object-cover mb-4"
-                        />
-                        <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-lg truncate">
-                            {report.title}
-                        </h3>
-                        <Badge
-                            variant={getStatusVariant(report.status)}
-                            className={cn(
-                            "rounded-md",
-                            getStatusClass(report.status)
-                            )}
-                        >
-                            {report.status}
-                        </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-                        {report.description}
-                        </p>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{report.category}</span>
-                        <span>
-                            {report.createdAt.toDate().toLocaleDateString()}
-                        </span>
-                        </div>
-                    </CardContent>
-                    </Card>
-                ))
-              ) : (
-                <p className="text-muted-foreground text-center col-span-full">Belum ada laporan terbaru.</p>
-              )}
-            </div>
+            <RecentReportsPagination reports={recentReports} />
           </div>
         </section>
       </main>
-      <footer className="bg-[#034032] text-primary-foreground rounded-t-3xl">
-        <div className="container flex flex-col items-center justify-between gap-4 py-6 md:h-24 md:flex-row md:py-0">
-          <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-            <Logo />
-            <p className="text-center text-xs sm:text-sm leading-loose text-primary-foreground/80 md:text-left">
-
-              Dibangun untuk memajukan desa.
-            </p>
-          </div>
-          <p className="text-sm text-primary-foreground/80">
-            &copy; {new Date().getFullYear()} Aspirasi Desa. All rights
-            reserved.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

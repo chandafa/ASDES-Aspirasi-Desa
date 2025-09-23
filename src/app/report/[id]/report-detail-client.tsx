@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import dynamic from 'next/dynamic';
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import type { Report } from "@/lib/types";
+import type { Report, ReportComment } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Loader2, AlertTriangle, MapPin, Tag, ShieldAlert, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,8 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Timestamp } from "firebase/firestore";
+import ReportComments from "./report-comments";
 
 export default function ReportDetailClient({ reportId }: { reportId: string }) {
   const [report, setReport] = useState<Report | null>(null);
@@ -33,7 +35,13 @@ export default function ReportDetailClient({ reportId }: { reportId: string }) {
         const reportDocSnap = await getDoc(reportDocRef);
 
         if (reportDocSnap.exists()) {
-          setReport({ id: reportDocSnap.id, ...reportDocSnap.data() } as Report);
+          const data = reportDocSnap.data();
+          setReport({
+            id: reportDocSnap.id,
+            ...data,
+            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+            comments: data.comments || [],
+          } as Report);
         } else {
           setError("Laporan tidak ditemukan.");
         }
@@ -47,6 +55,16 @@ export default function ReportDetailClient({ reportId }: { reportId: string }) {
 
     fetchReport();
   }, [reportId]);
+
+  const handleCommentAdded = useCallback((newComment: ReportComment) => {
+    setReport((prevReport) => {
+      if (!prevReport) return null;
+      return {
+        ...prevReport,
+        comments: [...(prevReport.comments || []), newComment],
+      };
+    });
+  }, []);
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -117,7 +135,7 @@ export default function ReportDetailClient({ reportId }: { reportId: string }) {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm pt-2">
                     <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{report.createdAt.toDate().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        <span>{new Date(report.createdAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <Tag className="h-4 w-4 text-muted-foreground" />
@@ -174,14 +192,17 @@ export default function ReportDetailClient({ reportId }: { reportId: string }) {
                     </CardContent>
                 </Card>
             </div>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Deskripsi Lengkap</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground whitespace-pre-wrap">{report.description}</p>
-                </CardContent>
-            </Card>
+            <div className="space-y-8">
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Deskripsi Lengkap</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <p className="text-muted-foreground whitespace-pre-wrap">{report.description}</p>
+                  </CardContent>
+              </Card>
+              <ReportComments report={report} onCommentAdded={handleCommentAdded} />
+            </div>
         </div>
       </div>
     </div>

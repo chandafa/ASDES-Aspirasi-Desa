@@ -24,6 +24,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { AdminNav } from "../components/admin-nav";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import DashboardMainLayout from "../main-layout";
 
 export default function AdminDashboardLayout({
   children,
@@ -90,9 +91,9 @@ export default function AdminDashboardLayout({
         </div>
         </SidebarFooter>
     </Sidebar>
-    <main className="flex-1 p-4 sm:p-6 lg:p-8">
+    <DashboardMainLayout>
         {children}
-    </main>
+    </DashboardMainLayout>
     </div>
   );
 }

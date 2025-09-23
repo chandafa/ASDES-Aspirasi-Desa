@@ -37,7 +37,7 @@ const reportFormSchema = z.object({
   location: z.object({
     lat: z.number(),
     lng: z.number(),
-    address: z.string().optional(),
+    address: z.string(),
   }),
 });
 
@@ -46,7 +46,7 @@ type ReportFormValues = z.infer<typeof reportFormSchema>;
 type LocationState = {
     lat: number;
     lng: number;
-    address?: string;
+    address: string;
 } | null;
 
 export function ReportForm() {
@@ -132,16 +132,35 @@ export function ReportForm() {
     setIsFetchingLocation(true);
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const newLocation = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                    address: `Lat: ${position.coords.latitude.toFixed(5)}, Lng: ${position.coords.longitude.toFixed(5)}`
-                };
-                setLocation(newLocation);
-                form.setValue('location', newLocation);
-                toast({ title: 'Lokasi Ditemukan', description: 'Lokasi Anda berhasil ditambahkan.' });
-                setIsFetchingLocation(false);
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                    const data = await response.json();
+                    const address = data.display_name || `Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`;
+                    
+                    const newLocation = {
+                        lat: latitude,
+                        lng: longitude,
+                        address: address
+                    };
+                    
+                    setLocation(newLocation);
+                    form.setValue('location', newLocation, { shouldValidate: true });
+                    toast({ title: 'Lokasi Ditemukan', description: 'Alamat berhasil diidentifikasi.' });
+
+                } catch (error) {
+                     toast({ variant: 'destructive', title: 'Gagal Mendapatkan Alamat', description: 'Tidak dapat mengambil data alamat dari koordinat.' });
+                     const fallbackLocation = {
+                        lat: latitude,
+                        lng: longitude,
+                        address: `Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`
+                     };
+                     setLocation(fallbackLocation);
+                     form.setValue('location', fallbackLocation, { shouldValidate: true });
+                } finally {
+                    setIsFetchingLocation(false);
+                }
             },
             (error) => {
                 toast({ variant: 'destructive', title: 'Gagal Mendapatkan Lokasi', description: error.message });
@@ -226,10 +245,10 @@ export function ReportForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Card>
+        <Card className="bg-[#034032] text-primary-foreground border-none">
           <CardHeader>
             <CardTitle>Detail Laporan</CardTitle>
-            <CardDescription>Jelaskan masalah yang Anda temukan secara rinci.</CardDescription>
+            <CardDescription className="text-primary-foreground/80">Jelaskan masalah yang Anda temukan secara rinci.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <FormField
@@ -239,7 +258,7 @@ export function ReportForm() {
                 <FormItem>
                   <FormLabel>Judul Laporan</FormLabel>
                   <FormControl>
-                    <Input placeholder="cth: Jalan berlubang di depan sekolah" {...field} />
+                    <Input placeholder="cth: Jalan berlubang di depan sekolah" {...field} className="bg-white text-card-foreground" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -254,7 +273,7 @@ export function ReportForm() {
                     <FormLabel>Kategori</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white text-card-foreground">
                           <SelectValue placeholder="Pilih kategori masalah" />
                         </SelectTrigger>
                       </FormControl>
@@ -278,7 +297,7 @@ export function ReportForm() {
                     <FormLabel>Tingkat Prioritas</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white text-card-foreground">
                           <SelectValue placeholder="Pilih prioritas" />
                         </SelectTrigger>
                       </FormControl>
@@ -302,40 +321,40 @@ export function ReportForm() {
                   <FormControl>
                     <Textarea
                       placeholder="Jelaskan detail kerusakan, lokasi, dan dampaknya bagi warga..."
-                      className="resize-none"
+                      className="resize-none bg-white text-card-foreground"
                       rows={5}
                       {...field}
                     />
                   </FormControl>
-                   <FormDescription>
+                   <FormDescription className="text-primary-foreground/80">
                     Gunakan fitur AI di bawah untuk membuat ringkasan otomatis dari laporan Anda.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-             <Button type="button" variant="outline" onClick={handleSummarize} disabled={isSummarizing} className="w-full">
+             <Button type="button" variant="outline" onClick={handleSummarize} disabled={isSummarizing} className="w-full bg-transparent border-primary-foreground/50 hover:bg-primary-foreground/10 text-primary-foreground">
                 {isSummarizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                 Buat Ringkasan dengan AI
             </Button>
 
             {summary && (
-                <Card className="bg-secondary">
+                <Card className="bg-white/5">
                     <CardHeader>
                         <CardTitle className="text-base">Ringkasan AI</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-sm text-muted-foreground">{summary}</p>
+                        <p className="text-sm text-primary-foreground/80">{summary}</p>
                     </CardContent>
                 </Card>
             )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-[#034032] text-primary-foreground border-none">
             <CardHeader>
                 <CardTitle>Lokasi & Foto</CardTitle>
-                <CardDescription>Bantu kami menemukan lokasi masalah lebih cepat.</CardDescription>
+                <CardDescription className="text-primary-foreground/80">Bantu kami menemukan lokasi masalah lebih cepat.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <FormField
@@ -344,23 +363,25 @@ export function ReportForm() {
                   render={() => (
                     <FormItem>
                         <FormLabel>Lokasi di Peta</FormLabel>
-                        <Card>
+                        <Card className="bg-white text-card-foreground">
                             <CardContent className="p-4">
                                 {location ? (
                                     <div>
-                                        <p className="text-sm font-medium">Lokasi Anda:</p>
+                                        <p className="text-sm font-medium">Alamat Teridentifikasi:</p>
                                         <p className="text-sm text-muted-foreground">{location.address}</p>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center justify-center h-24">
-                                        <p className="text-muted-foreground text-sm">Lokasi belum dipilih</p>
+                                    <div className="flex flex-col items-center justify-center h-24 text-muted-foreground text-center">
+                                        <MapPin className="h-8 w-8 mb-2" />
+                                        <p>Lokasi belum dipilih</p>
+                                        <p className="text-xs">Klik tombol di bawah untuk mendeteksi lokasi Anda.</p>
                                     </div>
                                 )}
                             </CardContent>
                             <CardFooter>
-                                <Button type="button" variant="outline" onClick={handleLocation} disabled={isFetchingLocation} className="w-full">
+                                <Button type="button" variant="outline" onClick={handleLocation} disabled={isFetchingLocation} className="w-full text-card-foreground">
                                     {isFetchingLocation ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />}
-                                    Dapatkan Lokasi Saat Ini
+                                    {location ? 'Pilih Ulang Lokasi' : 'Deteksi Lokasi Saya'}
                                 </Button>
                             </CardFooter>
                         </Card>
@@ -377,18 +398,18 @@ export function ReportForm() {
                         <FormControl>
                             <div>
                                 <div 
-                                    className="h-32 w-full rounded-md border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:bg-secondary transition-colors"
+                                    className="h-32 w-full rounded-md border-2 border-dashed border-primary-foreground/50 flex items-center justify-center cursor-pointer hover:bg-primary-foreground/10 transition-colors"
                                     onClick={() => fileInputRef.current?.click()}
                                     onDrop={(e) => { e.preventDefault(); handleFileSelect(e.dataTransfer.files); }}
                                     onDragOver={(e) => e.preventDefault()}
                                 >
                                     {isUploading ? (
-                                        <div className="text-center text-muted-foreground">
+                                        <div className="text-center text-primary-foreground/80">
                                             <Loader2 className="mx-auto h-8 w-8 mb-2 animate-spin" />
                                             <p>Mengunggah...</p>
                                         </div>
                                     ) : (
-                                        <div className='text-center text-muted-foreground'>
+                                        <div className='text-center text-primary-foreground/80'>
                                             <Upload className="mx-auto h-8 w-8 mb-2" />
                                             <p>Seret & lepas file atau klik untuk memilih</p>
                                         </div>
@@ -430,8 +451,8 @@ export function ReportForm() {
         </Card>
         
         <div className="flex justify-end gap-2">
-            <Button variant="outline" type="button" onClick={() => form.reset()}>Batal</Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button variant="outline" type="button" onClick={() => form.reset()} className="bg-transparent border-primary-foreground/50 hover:bg-primary-foreground/10 text-primary-foreground">Batal</Button>
+            <Button type="submit" disabled={form.formState.isSubmitting} className="bg-primary-foreground text-[#034032] hover:bg-primary-foreground/90">
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Kirim Laporan
             </Button>

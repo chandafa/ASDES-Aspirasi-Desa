@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/header';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/components/providers/auth-provider';
 import { ChatAssistant } from '@/components/shared/chat-assistant';
+import { Footer } from '@/components/layout/footer';
 
 export const metadata: Metadata = {
   title: 'Asdes - Aspirasi Desa',
@@ -31,6 +32,7 @@ export default function RootLayout({
           <AuthProvider>
             <Header />
             <main className="flex-1">{children}</main>
+            <Footer />
             <ChatAssistant />
             <Toaster />
           </AuthProvider>

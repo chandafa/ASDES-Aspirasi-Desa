@@ -21,6 +21,26 @@ export const users: User[] = [
     createdAt: '2023-01-15T09:00:00Z',
     updatedAt: '2023-01-15T09:00:00Z',
   },
+   {
+    uid: 'admin02',
+    name: 'Admin Cadangan',
+    email: 'admin.alt@desa.connect',
+    role: 'admin',
+    avatarUrl: 'https://i.pravatar.cc/150?u=admin02',
+    preferences: { theme: 'light' },
+    createdAt: '2023-02-01T00:00:00Z',
+    updatedAt: '2023-02-01T00:00:00Z',
+  },
+  {
+    uid: 'warga02',
+    name: 'Siti Aminah',
+    email: 'siti.a@example.com',
+    role: 'warga',
+    avatarUrl: 'https://i.pravatar.cc/150?u=warga02',
+    preferences: { theme: 'light' },
+    createdAt: '2023-02-20T10:00:00Z',
+    updatedAt: '2023-02-20T10:00:00Z',
+  },
 ];
 
 // Mock reports are now removed and will be fetched from Firestore.

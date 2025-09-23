@@ -18,7 +18,9 @@ const ReportMap = ({ reports }: ReportMapProps) => {
   useEffect(() => {
     // Hanya inisialisasi peta jika div sudah ada dan belum ada instance peta
     if (mapRef.current && !mapInstance.current) {
-      const defaultPosition: L.LatLngExpression = [-6.200000, 106.816666]; // Default to Jakarta
+      const defaultPosition: L.LatLngExpression = reports.length > 0
+        ? [reports[0].location.lat, reports[0].location.lng]
+        : [-6.200000, 106.816666]; // Default to Jakarta if no reports
 
       mapInstance.current = L.map(mapRef.current).setView(defaultPosition, 14);
 
@@ -27,11 +29,18 @@ const ReportMap = ({ reports }: ReportMapProps) => {
       }).addTo(mapInstance.current);
 
       reports.forEach((report) => {
+        const popupContent = `
+          <div style="font-family: Poppins, sans-serif; font-size: 14px; max-width: 200px;">
+            <b style="font-size: 16px; display: block; margin-bottom: 4px;">${report.title}</b>
+            <p style="margin: 0; font-size: 12px; color: #333; border-top: 1px solid #eee; padding-top: 8px;">
+              <strong>Lokasi:</strong> ${report.location.address}
+            </p>
+          </div>
+        `;
+
         L.marker([report.location.lat, report.location.lng])
           .addTo(mapInstance.current!)
-          .bindPopup(
-            `<b>${report.title}</b><br>${report.description.substring(0, 50)}...`
-          );
+          .bindPopup(popupContent);
       });
     }
 

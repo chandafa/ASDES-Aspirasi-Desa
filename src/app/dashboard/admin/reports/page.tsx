@@ -1,22 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { users } from "@/lib/data"; // Keep for user lookup for now
-import { MoreHorizontal, Loader2 } from "lucide-react";
+import { MoreHorizontal, Loader2, Search } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import type { Report } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Timestamp } from "firebase/firestore";
 
 export default function ManageReportsPage() {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
         const fetchReports = async () => {
@@ -25,10 +28,15 @@ export default function ManageReportsPage() {
                 const reportsCollection = collection(db, 'reports');
                 const q = query(reportsCollection, orderBy('createdAt', 'desc'));
                 const querySnapshot = await getDocs(q);
-                const reportsData = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                } as Report));
+                const reportsData = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        // Ensure createdAt is converted to a serializable format
+                        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+                    } as Report;
+                });
                 setReports(reportsData);
             } catch (error) {
                 console.error("Error fetching reports: ", error);
@@ -39,6 +47,16 @@ export default function ManageReportsPage() {
 
         fetchReports();
     }, []);
+
+    const filteredReports = useMemo(() => {
+        if (!searchQuery) {
+            return reports;
+        }
+        return reports.filter(report =>
+            report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            report.id.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [reports, searchQuery]);
 
     const getStatusVariant = (status: string) => {
         switch (status) {
@@ -78,8 +96,17 @@ export default function ManageReportsPage() {
             <CardHeader>
                 <CardTitle>Daftar Laporan</CardTitle>
                 <CardDescription>
-                    Total {reports.length} laporan masuk dari warga.
+                    Total {reports.length} laporan masuk dari warga. Menampilkan {filteredReports.length} laporan.
                 </CardDescription>
+                 <div className="relative pt-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Cari berdasarkan judul atau ID laporan..."
+                        className="pl-9"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -102,15 +129,15 @@ export default function ManageReportsPage() {
                                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                                 </TableCell>
                             </TableRow>
-                        ) : reports.length > 0 ? (
-                            reports.map((report) => {
+                        ) : filteredReports.length > 0 ? (
+                            filteredReports.map((report) => {
                                 const user = users.find(u => u.uid === report.createdBy); // Mock user lookup
                                 return (
                                     <TableRow key={report.id}>
                                         <TableCell className="font-medium">{report.title}</TableCell>
                                         <TableCell>{user?.name || 'Anonim'}</TableCell>
                                         <TableCell className={cn("capitalize", getPriorityClass(report.priority))}>{report.priority}</TableCell>
-                                        <TableCell>{report.createdAt ? report.createdAt.toDate().toLocaleDateString() : 'N/A'}</TableCell>
+                                        <TableCell>{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
                                         <TableCell>
                                             <Badge variant={getStatusVariant(report.status)} className={getStatusClass(report.status)}>
                                                 {report.status}
@@ -138,7 +165,7 @@ export default function ManageReportsPage() {
                         ) : (
                              <TableRow>
                                 <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                                    Belum ada laporan.
+                                    {searchQuery ? "Laporan tidak ditemukan." : "Belum ada laporan."}
                                 </TableCell>
                             </TableRow>
                         )}

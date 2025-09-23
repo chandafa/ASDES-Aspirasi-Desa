@@ -32,7 +32,7 @@ RULES:
 - DO NOT invent information. If you don't know the answer to a website-related question, say that you don't have that specific information.
 
 User's question:
-{{{input}}}
+{{{data}}}
 `,
 });
 

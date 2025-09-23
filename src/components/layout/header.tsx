@@ -5,6 +5,7 @@ import { Menu, FileText } from 'lucide-react';
 import { Logo } from '../shared/logo';
 import { ThemeToggle } from '../shared/theme-toggle';
 import { UserNav } from './user-nav';
+import { GlobalSearch } from '../shared/global-search';
 
 export function Header() {
   const navItems = [
@@ -30,17 +31,24 @@ export function Header() {
               <div className="p-4">
                 <Logo />
               </div>
-              <nav className="grid gap-2 p-4">
+              <nav className="grid gap-4 p-4">
                 {navItems.map((item) => (
                   <Link key={item.label} href={item.href} className="flex items-center py-2 text-lg font-semibold">
                     {item.label}
                   </Link>
                 ))}
+                <Button asChild>
+                    <Link href="/report/new">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Buat Laporan
+                    </Link>
+                </Button>
               </nav>
             </SheetContent>
           </Sheet>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
+            
             <nav className="hidden md:flex md:gap-4">
                 {navItems.map((item) => (
                     <Button key={item.label} variant="link" asChild className="text-foreground/80 hover:text-foreground">
@@ -49,12 +57,15 @@ export function Header() {
                 ))}
             </nav>
             <div className="flex items-center gap-2">
-                <Button asChild>
-                    <Link href="/report/new">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Buat Laporan
-                    </Link>
-                </Button>
+                <GlobalSearch />
+                <div className="hidden md:flex">
+                    <Button asChild>
+                        <Link href="/report/new">
+                            <FileText className="mr-2 h-4 w-4" />
+                            Buat Laporan
+                        </Link>
+                    </Button>
+                </div>
                 <ThemeToggle />
                 <UserNav />
             </div>

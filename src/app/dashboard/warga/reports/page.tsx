@@ -10,7 +10,7 @@ import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, Timestamp } from "firebase/firestore";
 import type { Report } from "@/lib/types";
 
 export default function WargaReportsPage() {
@@ -34,10 +34,14 @@ export default function WargaReportsPage() {
                     orderBy('createdAt', 'desc')
                 );
                 const querySnapshot = await getDocs(q);
-                const reportsData = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                } as Report));
+                const reportsData = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+                    } as Report
+                });
                 setUserReports(reportsData);
             } catch (error) {
                 console.error("Error fetching reports: ", error);
@@ -107,7 +111,7 @@ export default function WargaReportsPage() {
                                     <TableRow key={report.id}>
                                         <TableCell className="font-medium">{report.title}</TableCell>
                                         <TableCell>{report.category}</TableCell>
-                                        <TableCell>{report.createdAt ? report.createdAt.toDate().toLocaleDateString() : 'N/A'}</TableCell>
+                                        <TableCell>{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
                                         <TableCell>
                                             <Badge variant={getStatusVariant(report.status)} className={cn(getStatusClass(report.status))}>
                                                 {report.status}
