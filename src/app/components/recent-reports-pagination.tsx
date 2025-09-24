@@ -60,7 +60,7 @@ export default function RecentReportsPagination({ reports }: RecentReportsPagina
                 className="overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-xl h-full"
                 >
                 <CardContent className="p-4">
-                    <Image
+                <img 
                     data-ai-hint="damaged road"
                     src={report.photos[0]}
                     width={400}
