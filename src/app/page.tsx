@@ -4,12 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, CheckCircle, FileText, MapPin, Users, BarChart, Trophy, Construction, Droplets, Lightbulb } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { blogPosts } from "@/lib/data";
 import { Logo } from "@/components/shared/logo";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, limit, orderBy, query } from "firebase/firestore";
-import type { Report } from "@/lib/types";
+import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
+import type { Report, BlogPost } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import RecentReportsPagination from "@/app/components/recent-reports-pagination";
 import { Timestamp } from "firebase/firestore";
@@ -62,11 +61,37 @@ async function getReportStats() {
     }
 }
 
+async function getLatestBlogPost() {
+    try {
+        const postsCollection = collection(db, 'blogPosts');
+        const q = query(
+            postsCollection,
+            where('status', '==', 'published'),
+            orderBy('publishedAt', 'desc'),
+            limit(1)
+        );
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+            return null;
+        }
+        const doc = querySnapshot.docs[0];
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            publishedAt: (data.publishedAt as Timestamp).toDate().toISOString(),
+        } as BlogPost;
+    } catch (error) {
+        console.error("Error fetching latest blog post: ", error);
+        return null;
+    }
+}
+
 
 export default async function Home() {
   const recentReports = await getRecentReports();
   const { totalReports, resolvedReports, categoryRanking } = await getReportStats();
-  const totalArticles = blogPosts.length;
+  const latestBlogPost = await getLatestBlogPost();
     
     const categoryIcons: { [key: string]: React.ElementType } = {
         'Jalan Rusak': Construction,

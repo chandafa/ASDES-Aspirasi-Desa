@@ -9,10 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/shared/logo';
 import { useState } from 'react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
@@ -26,15 +27,42 @@ export default function RegisterPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
+      // 1. Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, {
+      const user = userCredential.user;
+      
+      // 2. Update Auth profile
+      await updateProfile(user, {
         displayName: fullName,
+        photoURL: `https://i.pravatar.cc/150?u=${user.uid}` // Add a default avatar
       });
+
+      // 3. Create user document in Firestore
+      const userDocRef = doc(db, "users", user.uid);
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        name: fullName,
+        email: email,
+        role: email === 'admin@desa.connect' ? 'admin' : 'warga',
+        avatarUrl: `https://i.pravatar.cc/150?u=${user.uid}`,
+        status: 'active',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        preferences: { theme: 'system' }
+      });
+      
       toast({
         title: 'Registrasi Berhasil',
         description: 'Akun Anda telah dibuat.',
       });
-      router.push('/dashboard/warga');
+      
+      // 4. Redirect based on role
+      if (email === 'admin@desa.connect') {
+          router.push('/dashboard/admin');
+      } else {
+          router.push('/dashboard/warga');
+      }
+
     } catch (error: any) {
       toast({
         variant: 'destructive',
