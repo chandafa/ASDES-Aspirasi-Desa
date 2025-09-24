@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -31,7 +32,7 @@ export function WargaNav() {
         <SidebarMenuButton asChild tooltip="Peta Masalah" isActive={pathname.startsWith('/dashboard/warga/map')}>
           <Link href="/dashboard/warga/map">
             <Map />
-            <span>Peta Masalah</span>
+            <span>Peta Masalah Saya</span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>

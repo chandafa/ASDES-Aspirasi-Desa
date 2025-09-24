@@ -1,7 +1,8 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, FileText } from 'lucide-react';
+import { Menu, FileText, Map } from 'lucide-react';
 import { Logo } from '../shared/logo';
 import { ThemeToggle } from '../shared/theme-toggle';
 import { UserNav } from './user-nav';
@@ -9,6 +10,7 @@ import { GlobalSearch } from '../shared/global-search';
 
 export function Header() {
   const navItems = [
+    { href: '/map', label: 'Peta Masalah' },
     { href: '/blog', label: 'Blog' },
     { href: '/help', label: 'Bantuan' },
   ];
@@ -37,7 +39,7 @@ export function Header() {
                     {item.label}
                   </Link>
                 ))}
-                <Button asChild className='bg-[#034032]'>
+                <Button asChild className='bg-[#034032] text-white hover:bg-[#034032]/90'>
                     <Link href="/report/new">
                         <FileText className="mr-2 h-4 w-4" />
                         Buat Laporan
@@ -59,7 +61,7 @@ export function Header() {
             <div className="flex items-center gap-2">
                 <GlobalSearch />
                 <div className="hidden md:flex">
-                    <Button asChild className='bg-[#034032]'>
+                    <Button asChild className='bg-[#034032] text-white hover:bg-[#034032]/90'>
                         <Link href="/report/new">
                             <FileText className="mr-2 h-4 w-4" />
                             Buat Laporan

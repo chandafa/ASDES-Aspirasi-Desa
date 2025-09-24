@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -141,7 +142,7 @@ export default async function Home() {
                         size="lg"
                         className="rounded-lg min-h-11 bg-white text-[#034032]  hover:bg-white/90"
                         >
-                        <Link href="/dashboard/warga/map">
+                        <Link href="/map">
                             <MapPin className="mr-2" />
                             Lihat Peta Masalah
                         </Link>
