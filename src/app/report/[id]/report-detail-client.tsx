@@ -126,8 +126,8 @@ export default function ReportDetailClient({ reportId }: { reportId: string }) {
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                 <div>
-                    <Badge variant={getStatusVariant(report.status)} className={cn("mb-2", getStatusClass(report.status))}>
-                        {report.status}
+                    <Badge variant={getStatusVariant(report.status)} className={cn("mb-2 capitalize", getStatusClass(report.status))}>
+                        {report.status.replace('_', ' ')}
                     </Badge>
                     <CardTitle className="text-3xl font-bold font-headline">{report.title}</CardTitle>
                     <CardDescription>Laporan ID: {report.id}</CardDescription>
