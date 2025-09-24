@@ -69,7 +69,7 @@ export default function RecentReportsPagination({ reports }: RecentReportsPagina
                     className="aspect-video w-full rounded-md object-cover mb-4"
                     />
                     <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-lg truncate">
+                    <h3 className="font-semibold text-lg max-w-full overflow-hidden text-ellipsis break-words">
                         {report.title}
                     </h3>
                     <Badge
@@ -82,7 +82,7 @@ export default function RecentReportsPagination({ reports }: RecentReportsPagina
                         {report.status}
                     </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+                    <p className="text-sm text-muted-foreground line-clamp-3 mb-4 break-words">
                     {report.description}
                     </p>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">

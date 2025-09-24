@@ -451,8 +451,8 @@ export function ReportForm() {
         </Card>
         
         <div className="flex justify-end gap-2">
-            <Button variant="outline" type="button" onClick={() => form.reset()} className="bg-transparent border-primary-foreground/50 hover:bg-primary-foreground/10 text-primary-foreground">Batal</Button>
-            <Button type="submit" disabled={form.formState.isSubmitting} className="bg-primary-foreground text-[#034032] hover:bg-primary-foreground/90">
+            <Button variant="outline" type="button" onClick={() => form.reset()} className="bg-transparent border-[#034032] hover:bg-primary-foreground/10">Batal</Button>
+            <Button type="submit" disabled={form.formState.isSubmitting} className="bg-[#034032] text-white hover:bg-primary-foreground/90">
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Kirim Laporan
             </Button>
