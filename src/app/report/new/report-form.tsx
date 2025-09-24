@@ -430,7 +430,7 @@ export function ReportForm() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                                 {photos.map((url, index) => (
                                     <div key={index} className="relative group">
-                                        <Image src={url} alt={`Preview ${index + 1}`} width={200} height={150} className="rounded-md object-cover aspect-[4/3]" />
+                                        <img src={url} alt={`Preview ${index + 1}`} width={200} height={150} className="rounded-md object-cover aspect-[4/3]" />
                                         <Button 
                                             type="button"
                                             variant="destructive"

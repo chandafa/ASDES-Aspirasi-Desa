@@ -69,13 +69,13 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                     </div>
                 </div>
 
-                <Image 
+                <img 
                     src={post.coverImage}
                     alt={post.title}
                     width={1200}
                     height={630}
                     className="rounded-xl aspect-video object-cover"
-                    priority
+                    // priority
                 />
             
                 <div className="prose dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">

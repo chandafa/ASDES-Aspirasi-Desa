@@ -34,7 +34,7 @@ export default function BlogPostsPagination({ posts }: BlogPostsPaginationProps)
           paginatedPosts.map((post) => (
             <Link key={post.id} href={`/blog/${post.slug}`}>
               <Card className="overflow-hidden h-full transform transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
-                <Image
+              <img 
                   data-ai-hint="village activity"
                   src={post.coverImage}
                   width={800}
