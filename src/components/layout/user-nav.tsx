@@ -40,7 +40,7 @@ export function UserNav() {
 
   if (!user) {
     return (
-        <Button asChild>
+        <Button asChild className='bg-[#034032]'>
             <Link href="/auth/login">Login</Link>
         </Button>
     )

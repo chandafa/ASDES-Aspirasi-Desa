@@ -37,7 +37,7 @@ export function Header() {
                     {item.label}
                   </Link>
                 ))}
-                <Button asChild>
+                <Button asChild className='bg-[#034032]'>
                     <Link href="/report/new">
                         <FileText className="mr-2 h-4 w-4" />
                         Buat Laporan
@@ -59,7 +59,7 @@ export function Header() {
             <div className="flex items-center gap-2">
                 <GlobalSearch />
                 <div className="hidden md:flex">
-                    <Button asChild>
+                    <Button asChild className='bg-[#034032]'>
                         <Link href="/report/new">
                             <FileText className="mr-2 h-4 w-4" />
                             Buat Laporan
