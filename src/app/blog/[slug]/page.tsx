@@ -4,6 +4,7 @@ import type { BlogPost } from "@/lib/types";
 import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import Image from "next/image";
 import { Calendar, User } from "lucide-react";
+import MainLayout from "@/components/layout/main-layout";
 
 async function getBlogPost(slug: string) {
     try {
@@ -33,53 +34,57 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   if (!post) {
     return (
-        <div className="container py-8">
-            <div className="max-w-3xl mx-auto text-center">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Artikel Tidak Ditemukan</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p>Maaf, kami tidak dapat menemukan artikel yang Anda cari.</p>
-                    </CardContent>
-                </Card>
+        <MainLayout>
+            <div className="container py-8">
+                <div className="max-w-3xl mx-auto text-center">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Artikel Tidak Ditemukan</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p>Maaf, kami tidak dapat menemukan artikel yang Anda cari.</p>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-        </div>
+        </MainLayout>
     )
   }
 
   return (
-    <div className="container py-8">
-        <article className="max-w-3xl mx-auto space-y-8">
-            <div className="space-y-4 text-center">
-                <h1 className="text-4xl font-bold font-headline tracking-tight lg:text-5xl">{post.title}</h1>
-                <div className="flex items-center justify-center gap-x-6 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(post.publishedAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                     <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        <span>Admin Desa</span>
+    <MainLayout>
+        <div className="container py-8">
+            <article className="max-w-3xl mx-auto space-y-8">
+                <div className="space-y-4 text-center">
+                    <h1 className="text-4xl font-bold font-headline tracking-tight lg:text-5xl">{post.title}</h1>
+                    <div className="flex items-center justify-center gap-x-6 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span>{new Date(post.publishedAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            <span>Admin Desa</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <Image 
-                src={post.coverImage}
-                alt={post.title}
-                width={1200}
-                height={630}
-                className="rounded-xl aspect-video object-cover"
-                priority
-            />
-           
-            <div className="prose dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
-               {post.body}
-            </div>
+                <Image 
+                    src={post.coverImage}
+                    alt={post.title}
+                    width={1200}
+                    height={630}
+                    className="rounded-xl aspect-video object-cover"
+                    priority
+                />
+            
+                <div className="prose dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
+                {post.body}
+                </div>
 
-            {/* TODO: Implement comments section */}
-        </article>
-    </div>
+                {/* TODO: Implement comments section */}
+            </article>
+        </div>
+    </MainLayout>
   );
 }

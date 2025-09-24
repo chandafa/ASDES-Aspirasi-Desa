@@ -15,6 +15,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Timestamp } from "firebase/firestore";
 import ReportComments from "./report-comments";
+import MainLayout from "@/components/layout/main-layout";
 
 export default function ReportDetailClient({ reportId }: { reportId: string }) {
   const [report, setReport] = useState<Report | null>(null);
@@ -96,115 +97,119 @@ export default function ReportDetailClient({ reportId }: { reportId: string }) {
 
   if (error) {
     return (
-      <div className="container py-8 text-center">
-         <Card className="max-w-md mx-auto">
-            <CardHeader>
-                <div className="mx-auto bg-destructive/10 p-3 rounded-full">
-                    <AlertTriangle className="h-8 w-8 text-destructive" />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <CardTitle className="text-xl">Terjadi Kesalahan</CardTitle>
-                <CardDescription>{error}</CardDescription>
-            </CardContent>
-            <CardFooter>
-                <Button asChild className="w-full">
-                    <Link href="/dashboard/warga/reports">Kembali ke Daftar Laporan</Link>
-                </Button>
-            </CardFooter>
-        </Card>
-      </div>
+      <MainLayout>
+        <div className="container py-8 text-center">
+            <Card className="max-w-md mx-auto">
+                <CardHeader>
+                    <div className="mx-auto bg-destructive/10 p-3 rounded-full">
+                        <AlertTriangle className="h-8 w-8 text-destructive" />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <CardTitle className="text-xl">Terjadi Kesalahan</CardTitle>
+                    <CardDescription>{error}</CardDescription>
+                </CardContent>
+                <CardFooter>
+                    <Button asChild className="w-full">
+                        <Link href="/dashboard/warga/reports">Kembali ke Daftar Laporan</Link>
+                    </Button>
+                </CardFooter>
+            </Card>
+        </div>
+      </MainLayout>
     );
   }
 
   if (!report) return null;
 
   return (
-    <div className="container py-8 max-w-5xl mx-auto">
-      <div className="space-y-8">
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                <div>
-                    <Badge variant={getStatusVariant(report.status)} className={cn("mb-2 capitalize", getStatusClass(report.status))}>
-                        {report.status.replace('_', ' ')}
-                    </Badge>
-                    <CardTitle className="text-3xl font-bold font-headline">{report.title}</CardTitle>
-                    <CardDescription>Laporan ID: {report.id}</CardDescription>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm pt-2">
-                    <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{new Date(report.createdAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-muted-foreground" />
-                        <span>{report.category}</span>
-                    </div>
-                    <div className="flex items-center gap-2 capitalize">
-                        <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-                        <span>Prioritas {report.priority}</span>
-                    </div>
-                </div>
-            </div>
-          </CardHeader>
-        </Card>
+    <MainLayout>
+      <div className="container py-8 max-w-5xl mx-auto">
+        <div className="space-y-8">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                  <div>
+                      <Badge variant={getStatusVariant(report.status)} className={cn("mb-2 capitalize", getStatusClass(report.status))}>
+                          {report.status.replace('_', ' ')}
+                      </Badge>
+                      <CardTitle className="text-3xl font-bold font-headline">{report.title}</CardTitle>
+                      <CardDescription>Laporan ID: {report.id}</CardDescription>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm pt-2">
+                      <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>{new Date(report.createdAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                          <Tag className="h-4 w-4 text-muted-foreground" />
+                          <span>{report.category}</span>
+                      </div>
+                      <div className="flex items-center gap-2 capitalize">
+                          <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                          <span>Prioritas {report.priority}</span>
+                      </div>
+                  </div>
+              </div>
+            </CardHeader>
+          </Card>
 
-        <div className="grid md:grid-cols-2 gap-8 items-start">
-            <div className="space-y-8">
+          <div className="grid md:grid-cols-2 gap-8 items-start">
+              <div className="space-y-8">
+                  <Card>
+                      <CardHeader>
+                          <CardTitle>Foto Laporan</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <Carousel className="w-full">
+                              <CarouselContent>
+                                  {report.photos.map((photo, index) => (
+                                  <CarouselItem key={index}>
+                                      <Image
+                                      data-ai-hint="damaged infrastructure"
+                                      src={photo}
+                                      alt={`Foto Laporan ${index + 1}`}
+                                      width={800}
+                                      height={600}
+                                      className="rounded-lg object-cover aspect-[4/3]"
+                                      />
+                                  </CarouselItem>
+                                  ))}
+                              </CarouselContent>
+                              <CarouselPrevious className="left-2" />
+                              <CarouselNext className="right-2" />
+                          </Carousel>
+                      </CardContent>
+                  </Card>
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                              <MapPin className="h-5 w-5" />
+                              Lokasi Masalah
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <div className="h-80 w-full rounded-lg overflow-hidden border">
+                              <ReportMap reports={[report]} />
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-2">{report.location.address}</p>
+                      </CardContent>
+                  </Card>
+              </div>
+              <div className="space-y-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Foto Laporan</CardTitle>
+                        <CardTitle>Deskripsi Lengkap</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Carousel className="w-full">
-                            <CarouselContent>
-                                {report.photos.map((photo, index) => (
-                                <CarouselItem key={index}>
-                                    <Image
-                                    data-ai-hint="damaged infrastructure"
-                                    src={photo}
-                                    alt={`Foto Laporan ${index + 1}`}
-                                    width={800}
-                                    height={600}
-                                    className="rounded-lg object-cover aspect-[4/3]"
-                                    />
-                                </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                            <CarouselPrevious className="left-2" />
-                            <CarouselNext className="right-2" />
-                        </Carousel>
+                        <p className="text-muted-foreground whitespace-pre-wrap">{report.description}</p>
                     </CardContent>
                 </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <MapPin className="h-5 w-5" />
-                            Lokasi Masalah
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-80 w-full rounded-lg overflow-hidden border">
-                            <ReportMap reports={[report]} />
-                        </div>
-                         <p className="text-sm text-muted-foreground mt-2">{report.location.address}</p>
-                    </CardContent>
-                </Card>
-            </div>
-            <div className="space-y-8">
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Deskripsi Lengkap</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                      <p className="text-muted-foreground whitespace-pre-wrap">{report.description}</p>
-                  </CardContent>
-              </Card>
-              <ReportComments report={report} onCommentAdded={handleCommentAdded} />
-            </div>
+                <ReportComments report={report} onCommentAdded={handleCommentAdded} />
+              </div>
+          </div>
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
 }
