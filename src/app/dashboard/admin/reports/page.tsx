@@ -4,49 +4,73 @@ import { useEffect, useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { users } from "@/lib/data"; // Keep for user lookup for now
-import { MoreHorizontal, Loader2, Search } from "lucide-react";
+import { MoreHorizontal, Loader2, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import type { Report } from "@/lib/types";
+import { collection, getDocs, orderBy, query, doc, deleteDoc, updateDoc, Timestamp } from "firebase/firestore";
+import type { Report, ReportStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Timestamp } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function ManageReportsPage() {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const { toast } = useToast();
+
+    const fetchReports = async () => {
+        setLoading(true);
+        try {
+            const reportsCollection = collection(db, 'reports');
+            const q = query(reportsCollection, orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(q);
+            const reportsData = querySnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+                } as Report;
+            });
+            setReports(reportsData);
+        } catch (error) {
+            console.error("Error fetching reports: ", error);
+            toast({ variant: "destructive", title: "Gagal memuat laporan", description: "Terjadi kesalahan saat mengambil data." });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchReports = async () => {
-            setLoading(true);
-            try {
-                const reportsCollection = collection(db, 'reports');
-                const q = query(reportsCollection, orderBy('createdAt', 'desc'));
-                const querySnapshot = await getDocs(q);
-                const reportsData = querySnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        ...data,
-                        // Ensure createdAt is converted to a serializable format
-                        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
-                    } as Report;
-                });
-                setReports(reportsData);
-            } catch (error) {
-                console.error("Error fetching reports: ", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchReports();
     }, []);
+    
+    const handleDeleteReport = async (reportId: string) => {
+        try {
+            await deleteDoc(doc(db, "reports", reportId));
+            toast({ title: "Laporan Dihapus", description: "Laporan telah berhasil dihapus dari sistem." });
+            setReports(prev => prev.filter(r => r.id !== reportId));
+        } catch (error) {
+            console.error("Error deleting report: ", error);
+            toast({ variant: "destructive", title: "Gagal Menghapus", description: "Terjadi kesalahan saat menghapus laporan." });
+        }
+    };
+    
+    const handleUpdateStatus = async (reportId: string, status: ReportStatus) => {
+        const reportRef = doc(db, "reports", reportId);
+        try {
+            await updateDoc(reportRef, { status: status });
+            toast({ title: "Status Diperbarui", description: `Laporan telah ditandai sebagai ${status}.` });
+            setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: status } : r));
+        } catch (error) {
+            console.error("Error updating status: ", error);
+            toast({ variant: "destructive", title: "Gagal Memperbarui", description: "Terjadi kesalahan saat mengubah status laporan." });
+        }
+    };
 
     const filteredReports = useMemo(() => {
         if (!searchQuery) {
@@ -85,6 +109,8 @@ export default function ManageReportsPage() {
             default: return '';
         }
     }
+    
+    const statusOptions: ReportStatus[] = ["pending", "in_progress", "resolved", "rejected"];
 
   return (
     <div className="space-y-6">
@@ -113,37 +139,32 @@ export default function ManageReportsPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Judul Laporan</TableHead>
-                            <TableHead>Pelapor</TableHead>
                             <TableHead>Prioritas</TableHead>
                             <TableHead>Tanggal</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>
-                                <span className="sr-only">Aksi</span>
-                            </TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
                              <TableRow>
-                                <TableCell colSpan={6} className="text-center h-24">
+                                <TableCell colSpan={5} className="text-center h-24">
                                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                                 </TableCell>
                             </TableRow>
                         ) : filteredReports.length > 0 ? (
-                            filteredReports.map((report) => {
-                                const user = users.find(u => u.uid === report.createdBy); // Mock user lookup
-                                return (
-                                    <TableRow key={report.id}>
-                                        <TableCell className="font-medium">{report.title}</TableCell>
-                                        <TableCell>{user?.name || 'Anonim'}</TableCell>
-                                        <TableCell className={cn("capitalize", getPriorityClass(report.priority))}>{report.priority}</TableCell>
-                                        <TableCell>{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={getStatusVariant(report.status)} className={getStatusClass(report.status)}>
-                                                {report.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
+                            filteredReports.map((report) => (
+                                <TableRow key={report.id}>
+                                    <TableCell className="font-medium">{report.title}</TableCell>
+                                    <TableCell className={cn("capitalize", getPriorityClass(report.priority))}>{report.priority}</TableCell>
+                                    <TableCell>{report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={getStatusVariant(report.status)} className={cn("capitalize", getStatusClass(report.status))}>
+                                            {report.status.replace('_', ' ')}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <AlertDialog>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -154,17 +175,43 @@ export default function ManageReportsPage() {
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                                     <DropdownMenuItem asChild><Link href={`/report/${report.id}`}>Lihat Detail</Link></DropdownMenuItem>
-                                                    <DropdownMenuItem>Ubah Status</DropdownMenuItem>
-                                                    <DropdownMenuItem>Hapus</DropdownMenuItem>
+                                                    <DropdownMenuSub>
+                                                        <DropdownMenuSubTrigger>Ubah Status</DropdownMenuSubTrigger>
+                                                        <DropdownMenuSubContent>
+                                                            {statusOptions.map(status => (
+                                                                <DropdownMenuItem key={status} onSelect={() => handleUpdateStatus(report.id, status)} disabled={report.status === status}>
+                                                                    <span className="capitalize">{status.replace('_', ' ')}</span>
+                                                                </DropdownMenuItem>
+                                                            ))}
+                                                        </DropdownMenuSubContent>
+                                                    </DropdownMenuSub>
+                                                    <DropdownMenuSeparator />
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onSelect={e => e.preventDefault()}>
+                                                            <Trash2 className="mr-2 h-4 w-4"/> Hapus
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                )
-                            })
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Anda Yakin?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Tindakan ini tidak dapat dibatalkan. Ini akan menghapus laporan secara permanen dari server.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteReport(report.id)} className="bg-destructive hover:bg-destructive/90">Hapus</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
+                                </TableRow>
+                            ))
                         ) : (
                              <TableRow>
-                                <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
                                     {searchQuery ? "Laporan tidak ditemukan." : "Belum ada laporan."}
                                 </TableCell>
                             </TableRow>

@@ -43,9 +43,6 @@ export const users: User[] = [
   },
 ];
 
-// Mock reports are now removed and will be fetched from Firestore.
-export const reports: Report[] = [];
-
 export const blogPosts: BlogPost[] = [
   {
     id: 'post01',

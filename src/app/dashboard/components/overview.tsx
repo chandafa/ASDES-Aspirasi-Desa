@@ -1,9 +1,13 @@
 'use client'
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
-import { reports } from "@/lib/data"
+import type { Report } from "@/lib/types"
 
-export function Overview() {
+interface OverviewProps {
+  reports: Report[];
+}
+
+export function Overview({ reports }: OverviewProps) {
     const data = [
         { name: "Pending", total: reports.filter(r => r.status === 'pending').length },
         { name: "In Progress", total: reports.filter(r => r.status === 'in_progress').length },
@@ -27,6 +31,7 @@ export function Overview() {
           tickLine={false}
           axisLine={false}
           tickFormatter={(value) => `${value}`}
+          allowDecimals={false}
         />
         <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
       </BarChart>

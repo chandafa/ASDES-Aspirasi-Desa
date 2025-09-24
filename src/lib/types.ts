@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase/firestore";
 
 export type User = {
+  id?: string; // Firestore document ID
   uid: string;
   name: string;
   email: string;
@@ -11,6 +12,7 @@ export type User = {
   };
   createdAt: string;
   updatedAt: string;
+  status?: 'active' | 'inactive';
 };
 
 export type ReportStatus = 'pending' | 'in_progress' | 'resolved' | 'rejected';

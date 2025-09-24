@@ -4,23 +4,81 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { FileText, Clock, CheckCircle, XCircle, PlusCircle, Newspaper, Bell, FileClock, ArrowRight, LifeBuoy } from "lucide-react";
 import Link from "next/link";
-import { reports, blogPosts } from "@/lib/data";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import type { Report, BlogPost } from "@/lib/types";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, orderBy, limit, Timestamp } from "firebase/firestore";
 
 
 export default function WargaDashboard() {
   const { user } = useAuth();
+  const [userReports, setUserReports] = useState<Report[]>([]);
+  const [latestBlogPost, setLatestBlogPost] = useState<BlogPost | null>(null);
+  const [loading, setLoading] = useState(true);
   
+  useEffect(() => {
+    async function fetchData() {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        // Fetch user reports
+        const reportsCollection = collection(db, 'reports');
+        const reportsQuery = query(
+            reportsCollection, 
+            where("createdBy", "==", user.uid),
+            orderBy('createdAt', 'desc')
+        );
+        const reportsSnapshot = await getDocs(reportsQuery);
+        const reportsData = reportsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
+            } as Report
+        });
+        setUserReports(reportsData);
+
+        // Fetch latest blog post
+        const postsCollection = collection(db, 'blogPosts');
+        const postsQuery = query(
+            postsCollection,
+            where('status', '==', 'published'),
+            orderBy('publishedAt', 'desc'),
+            limit(1)
+        );
+        const postsSnapshot = await getDocs(postsQuery);
+        if (!postsSnapshot.empty) {
+          const doc = postsSnapshot.docs[0];
+          const data = doc.data();
+          setLatestBlogPost({
+            id: doc.id,
+            ...data,
+            publishedAt: (data.publishedAt as Timestamp).toDate().toISOString(),
+          } as BlogPost);
+        }
+
+      } catch (error) {
+        console.error("Error fetching dashboard data: ", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [user]);
+
   if (!user) return null;
 
-  // Note: Data is still mocked. In a real app, you'd fetch this based on user.uid
-  const userReports = reports.filter(r => r.createdBy === 'warga01');
-  const latestReport = userReports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-  const latestBlogPost = blogPosts.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())[0];
-
+  const latestReport = userReports[0];
 
   const stats = {
     total: userReports.length,
