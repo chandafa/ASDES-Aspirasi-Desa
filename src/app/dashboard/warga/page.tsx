@@ -249,7 +249,7 @@ export default function WargaDashboard() {
                 <CardContent>
                    {latestBlogPost ? (
                         <Link href={`/blog/${latestBlogPost.slug}`} className="group space-y-2 block">
-                             <Image
+                             <img 
                                 data-ai-hint="village news"
                                 src={latestBlogPost.coverImage}
                                 alt={latestBlogPost.title}

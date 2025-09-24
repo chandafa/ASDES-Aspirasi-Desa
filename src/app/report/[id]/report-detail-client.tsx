@@ -165,7 +165,7 @@ export default function ReportDetailClient({ reportId }: { reportId: string }) {
                               <CarouselContent>
                                   {report.photos.map((photo, index) => (
                                   <CarouselItem key={index}>
-                                      <Image
+                                      <img 
                                       data-ai-hint="damaged infrastructure"
                                       src={photo}
                                       alt={`Foto Laporan ${index + 1}`}
