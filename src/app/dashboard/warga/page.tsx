@@ -1,8 +1,9 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { FileText, Clock, CheckCircle, XCircle, PlusCircle, Newspaper, Bell, FileClock, ArrowRight, LifeBuoy } from "lucide-react";
+import { FileText, Clock, CheckCircle, XCircle, PlusCircle, Newspaper, Bell, FileClock, ArrowRight, LifeBuoy, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Badge } from "@/components/ui/badge";
@@ -76,8 +77,6 @@ export default function WargaDashboard() {
     fetchData();
   }, [user]);
 
-  if (!user) return null;
-
   const latestReport = userReports[0];
 
   const stats = {
@@ -107,6 +106,15 @@ export default function WargaDashboard() {
       }
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   return (
     <div className="space-y-6">
@@ -261,3 +269,5 @@ export default function WargaDashboard() {
     </div>
   )
 }
+
+    

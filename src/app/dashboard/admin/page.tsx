@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -149,8 +150,8 @@ export default function AdminDashboard() {
             </Card>
         </div>
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+            <Card className="col-span-1 lg:col-span-4">
                 <CardHeader>
                     <CardTitle>Statistik Laporan</CardTitle>
                 </CardHeader>
@@ -158,7 +159,7 @@ export default function AdminDashboard() {
                     <Overview reports={reports} />
                 </CardContent>
             </Card>
-            <Card className="col-span-4 lg:col-span-3">
+            <Card className="col-span-1 lg:col-span-3">
                 <CardHeader>
                     <CardTitle>Laporan Terbaru</CardTitle>
                     <CardDescription>
@@ -169,7 +170,7 @@ export default function AdminDashboard() {
                     <RecentReports reports={reports} users={allUsers} />
                 </CardContent>
             </Card>
-             <Card className="col-span-4 lg:col-span-7">
+             <Card className="col-span-1 lg:col-span-7">
                 <CardHeader className="flex flex-row items-center gap-4 space-y-0">
                     <Trophy className="h-6 w-6 text-amber-500" />
                     <CardTitle>Warga Paling Aktif</CardTitle>
