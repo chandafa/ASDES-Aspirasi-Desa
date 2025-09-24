@@ -25,6 +25,7 @@ import { AdminNav } from "../components/admin-nav";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import DashboardMainLayout from "../main-layout";
+import { Header } from "@/components/layout/header";
 
 export default function AdminDashboardLayout({
   children,
@@ -91,9 +92,12 @@ export default function AdminDashboardLayout({
         </div>
         </SidebarFooter>
     </Sidebar>
-    <DashboardMainLayout>
-        {children}
-    </DashboardMainLayout>
+     <div className="flex flex-col flex-1">
+        <Header />
+        <DashboardMainLayout>
+            {children}
+        </DashboardMainLayout>
+    </div>
     </div>
   );
 }

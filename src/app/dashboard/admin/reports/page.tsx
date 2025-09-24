@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import emailjs from 'emailjs-com';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MoreHorizontal, Loader2, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, orderBy, query, doc, deleteDoc, updateDoc, Timestamp } from "firebase/firestore";
-import type { Report, ReportStatus } from "@/lib/types";
+import { collection, getDocs, orderBy, query, doc, deleteDoc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
+import type { Report, ReportStatus, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -59,12 +60,61 @@ export default function ManageReportsPage() {
             toast({ variant: "destructive", title: "Gagal Menghapus", description: "Terjadi kesalahan saat menghapus laporan." });
         }
     };
+
+    const sendNotificationEmail = async (report: Report) => {
+        try {
+            // 1. Fetch user data to get the email
+            const userDocRef = doc(db, "users", report.createdBy);
+            const userDocSnap = await getDoc(userDocRef);
+
+            if (!userDocSnap.exists()) {
+                throw new Error("User data not found for this report.");
+            }
+            const userData = userDocSnap.data() as User;
+
+            // 2. Prepare email parameters
+            const templateParams = {
+                to_name: userData.name,
+                to_email: userData.email,
+                report_title: report.title,
+                report_id: report.id,
+                report_status: "Selesai (Resolved)",
+            };
+
+            // 3. Send email using EmailJS
+            await emailjs.send(
+                process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
+                process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
+                templateParams,
+                process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
+            );
+            
+            toast({
+                title: 'Notifikasi Terkirim',
+                description: `Email telah dikirim ke ${userData.email}.`,
+            });
+
+        } catch (error) {
+            console.error('Failed to send email:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Gagal Mengirim Email',
+                description: 'Terjadi kesalahan saat mengirim notifikasi email.',
+            });
+        }
+    };
     
     const handleUpdateStatus = async (reportId: string, status: ReportStatus) => {
         const reportRef = doc(db, "reports", reportId);
         try {
             await updateDoc(reportRef, { status: status });
             toast({ title: "Status Diperbarui", description: `Laporan telah ditandai sebagai ${status}.` });
+            
+            const updatedReport = reports.find(r => r.id === reportId);
+            if (updatedReport && status === 'resolved') {
+                await sendNotificationEmail({ ...updatedReport, status: status });
+            }
+
             setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: status } : r));
         } catch (error) {
             console.error("Error updating status: ", error);
