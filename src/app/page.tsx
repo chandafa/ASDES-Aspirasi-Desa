@@ -149,7 +149,7 @@ export default async function Home() {
                     </div>
                     </div>
                     <div className="flex items-center justify-center">
-                    <Image
+                    <img
     src="/images/hero.png"
     width={550}
     height={400}
