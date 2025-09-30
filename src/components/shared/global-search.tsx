@@ -9,7 +9,7 @@ import { Loader2, Search, FileText } from "lucide-react";
 import Link from "next/link";
 import { ScrollArea } from "../ui/scroll-area";
 import { Button } from "../ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "../ui/dialog";
 
 export function GlobalSearch() {
     const [reports, setReports] = useState<Report[]>([]);
@@ -78,6 +78,7 @@ export function GlobalSearch() {
             <DialogContent className="sm:max-w-lg p-0">
                 <DialogHeader className="p-4 pb-2 border-b">
                      <DialogTitle>Cari Laporan di Seluruh Situs</DialogTitle>
+                     <DialogDescription className="sr-only">Ketik di bawah untuk mencari laporan berdasarkan judul atau ID.</DialogDescription>
                      <div className="relative pt-2">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input

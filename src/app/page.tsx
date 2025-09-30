@@ -1,4 +1,5 @@
 
+
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -13,14 +14,15 @@ import type { Report, BlogPost } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import RecentReportsPagination from "@/app/components/recent-reports-pagination";
 import { Timestamp } from "firebase/firestore";
-import MainLayout from "@/components/layout/main-layout";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 
 async function getRecentReports() {
     try {
         const reportsCollection = collection(db, 'reports');
         // Fetch more reports for pagination
         const q = query(reportsCollection, orderBy('createdAt', 'desc'), limit(9));
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocs(q, { cache: 'no-store' });
         const reportsData = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
@@ -40,7 +42,7 @@ async function getRecentReports() {
 async function getReportStats() {
     try {
         const reportsCollection = collection(db, 'reports');
-        const querySnapshot = await getDocs(reportsCollection);
+        const querySnapshot = await getDocs(reportsCollection, { cache: 'no-store' });
         const reports = querySnapshot.docs.map(doc => doc.data() as Omit<Report, 'id' | 'createdAt'>);
         
         const categoryCounts = reports.reduce((acc, report) => {
@@ -72,7 +74,7 @@ async function getLatestBlogPost() {
             orderBy('publishedAt', 'desc'),
             limit(1)
         );
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocs(q, { cache: 'no-store' });
         if (querySnapshot.empty) {
             return null;
         }
@@ -103,7 +105,9 @@ export default async function Home() {
 
 
   return (
-    <MainLayout>
+    <>
+    <Header />
+    <main className="flex-1">
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950">
         <main className="flex-1">
             <section className="py-20 md:py-20 lg:py-6">
@@ -327,6 +331,8 @@ export default async function Home() {
             </section>
         </main>
         </div>
-    </MainLayout>
+        </main>
+        <Footer />
+    </>
   );
 }

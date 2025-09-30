@@ -8,7 +8,7 @@ import { RecentReports } from "../components/recent-reports";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs, query, onSnapshot } from "firebase/firestore";
 import type { Report, User, BlogPost } from "@/lib/types";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Timestamp } from "firebase/firestore";
@@ -28,13 +28,55 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch all reports
-        const reportsCollection = collection(db, 'reports');
-        const reportsSnapshot = await getDocs(reportsCollection);
-        const reportsData = reportsSnapshot.docs.map(doc => {
+    const fetchInitialData = async () => {
+        try {
+            // Fetch all users
+            const usersCollection = collection(db, 'users');
+            const usersSnapshot = await getDocs(usersCollection);
+            const usersData = usersSnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+                } as User
+            });
+            setAllUsers(usersData);
+
+            // Fetch all blog posts
+            const blogPostsCollection = collection(db, 'blogPosts');
+            const blogPostsSnapshot = await getDocs(blogPostsCollection);
+            const blogPostsData = blogPostsSnapshot.docs.map(doc => doc.data() as BlogPost);
+
+            setStats(prevStats => ({
+                ...prevStats,
+                totalUsers: usersData.filter(u => u.role === 'warga').length,
+                totalPosts: blogPostsData.length,
+            }));
+
+            // Return users data to be used in the snapshot listener
+            return { usersData };
+
+        } catch (error) {
+            console.error("Error fetching initial data for admin dashboard: ", error);
+            return { usersData: [] };
+        }
+    };
+
+    const reportsCollection = collection(db, 'reports');
+    const q = query(reportsCollection);
+
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+        setLoading(true);
+
+        // Fetch users if not already fetched
+        let currentUsers = allUsers;
+        if (currentUsers.length === 0) {
+            const { usersData } = await fetchInitialData();
+            currentUsers = usersData;
+        }
+
+        const reportsData = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -42,57 +84,41 @@ export default function AdminDashboard() {
                 createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
             } as Report;
         });
+        
         setReports(reportsData);
 
-        // Fetch all users
-        const usersCollection = collection(db, 'users');
-        const usersSnapshot = await getDocs(usersCollection);
-        const usersData = usersSnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                ...data,
-                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
-            } as User
-        });
-        setAllUsers(usersData);
-
-        // Fetch all blog posts
-        const blogPostsCollection = collection(db, 'blogPosts');
-        const blogPostsSnapshot = await getDocs(blogPostsCollection);
-        const blogPostsData = blogPostsSnapshot.docs.map(doc => doc.data() as BlogPost);
-
-        // Calculate stats
-        setStats({
+        // Recalculate stats based on new reports data
+        setStats(prevStats => ({
+          ...prevStats,
           totalReports: reportsData.length,
           resolvedReports: reportsData.filter(r => r.status === 'resolved').length,
-          totalUsers: usersData.filter(u => u.role === 'warga').length,
-          totalPosts: blogPostsData.length,
-        });
-
-        // Calculate active users
-        const wargaUsers = usersData.filter(u => u.role === 'warga');
-        const usersWithReportCount = wargaUsers.map(user => ({
-            ...user,
-            reportCount: reportsData.filter(r => r.createdBy === user.uid).length
         }));
-        
-        usersWithReportCount.sort((a, b) => (b.reportCount || 0) - (a.reportCount || 0));
-        
-        setActiveUsers(usersWithReportCount.slice(0, 3));
 
-      } catch (error) {
-        console.error("Error fetching admin dashboard data: ", error);
-      } finally {
+        // Recalculate active users
+        if (currentUsers.length > 0) {
+            const wargaUsers = currentUsers.filter(u => u.role === 'warga');
+            const usersWithReportCount = wargaUsers.map(user => ({
+                ...user,
+                reportCount: reportsData.filter(r => r.createdBy === user.uid).length
+            }));
+            
+            usersWithReportCount.sort((a, b) => (b.reportCount || 0) - (a.reportCount || 0));
+            setActiveUsers(usersWithReportCount.slice(0, 3));
+        }
+
         setLoading(false);
-      }
-    };
+    }, (error) => {
+        console.error("Error listening to reports collection: ", error);
+        setLoading(false);
+    });
 
-    fetchData();
-  }, []);
+    // Cleanup listener on component unmount
+    return () => unsubscribe();
+
+  }, [allUsers]); // Dependency array includes allUsers to manage re-fetching initial data if needed
 
 
-  if (loading) {
+  if (loading && reports.length === 0) {
       return (
           <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
               <Loader2 className="h-8 w-8 animate-spin" />

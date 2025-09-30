@@ -63,44 +63,66 @@ export default function ManageReportsPage() {
 
     const sendNotificationEmail = async (report: Report) => {
         try {
-            // 1. Fetch user data to get the email
             const userDocRef = doc(db, "users", report.createdBy);
             const userDocSnap = await getDoc(userDocRef);
 
             if (!userDocSnap.exists()) {
-                throw new Error("User data not found for this report.");
+                console.error(`User data not found for UID: ${report.createdBy}`);
+                toast({
+                    variant: 'destructive',
+                    title: 'Gagal Mengirim Email',
+                    description: `Data pengguna untuk laporan ini tidak ditemukan.`,
+                });
+                return;
             }
             const userData = userDocSnap.data() as User;
 
-            // 2. Prepare email parameters
             const templateParams = {
                 to_name: userData.name,
                 to_email: userData.email,
                 report_title: report.title,
                 report_id: report.id,
                 report_status: "Selesai (Resolved)",
+                base_url: "https://aspirasi-desa.netlify.app" // 🔥 ganti dengan URL websitemu
             };
 
-            // 3. Send email using EmailJS
-            await emailjs.send(
-                process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
-                process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
+            emailjs.send(
+                "service_taaotx6x",
+                "template_3mwr3s1",
                 templateParams,
-                process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
-            );
-            
-            toast({
-                title: 'Notifikasi Terkirim',
-                description: `Email telah dikirim ke ${userData.email}.`,
+                "xiMC-WR1ha1nn8atz" // langsung hardcode dulu untuk tes
+            )
+            .then((response) => {
+                console.log('SUCCESS!', response.status, response.text);
+                toast({
+                    title: 'Notifikasi Terkirim',
+                    description: `Email telah dikirim ke ${userData.email}.`,
+                });
+            }, (error) => {
+                console.error('FAILED...', error);
+                toast({
+                   variant: 'destructive',
+                   title: 'Gagal Mengirim Email Notifikasi',
+                   description: `Terjadi kesalahan saat mengirim notifikasi. Detail: ${error.text || 'Periksa konfigurasi EmailJS Anda.'}`,
+               });
             });
 
-        } catch (error) {
-            console.error('Failed to send email:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Gagal Mengirim Email',
-                description: 'Terjadi kesalahan saat mengirim notifikasi email.',
-            });
+        } catch (error: any) {
+             console.error('Failed to send email:', error);
+            if (error.code === 'permission-denied') {
+                toast({
+                    variant: 'destructive',
+                    title: 'Akses Ditolak',
+                    description: 'Gagal mengirim email. Periksa Aturan Keamanan (Security Rules) Firestore Anda. Admin mungkin tidak memiliki izin untuk membaca data pengguna.',
+                    duration: 9000,
+                });
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Gagal Mengirim Email Notifikasi',
+                    description: 'Terjadi kesalahan saat mengirim notifikasi.',
+                });
+            }
         }
     };
     
