@@ -17,18 +17,18 @@ import { Timestamp } from "firebase/firestore";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 
+export const revalidate = 0;
+
 async function getRecentReports() {
     try {
         const reportsCollection = collection(db, 'reports');
-        // Fetch more reports for pagination
         const q = query(reportsCollection, orderBy('createdAt', 'desc'), limit(9));
-        const querySnapshot = await getDocs(q, { cache: 'no-store' });
+        const querySnapshot = await getDocs(q);
         const reportsData = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
                 ...data,
-                // Convert Timestamp to a serializable format (ISO string)
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
             } as Report;
         });
@@ -42,7 +42,7 @@ async function getRecentReports() {
 async function getReportStats() {
     try {
         const reportsCollection = collection(db, 'reports');
-        const querySnapshot = await getDocs(reportsCollection, { cache: 'no-store' });
+        const querySnapshot = await getDocs(reportsCollection);
         const reports = querySnapshot.docs.map(doc => doc.data() as Omit<Report, 'id' | 'createdAt'>);
         
         const categoryCounts = reports.reduce((acc, report) => {
@@ -74,7 +74,7 @@ async function getLatestBlogPost() {
             orderBy('publishedAt', 'desc'),
             limit(1)
         );
-        const querySnapshot = await getDocs(q, { cache: 'no-store' });
+        const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) {
             return null;
         }
