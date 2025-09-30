@@ -3,8 +3,8 @@ import './globals.css';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/components/providers/auth-provider';
-import { ChatAssistant } from '@/components/shared/chat-assistant';
 import PwaInstallPrompt from '@/components/shared/pwa-install-prompt';
+import { ChatWidget } from '@/components/shared/chat-widget';
 
 export const metadata: Metadata = {
   title: 'Asdes - Aspirasi Desa',
@@ -32,7 +32,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             {children}
-            <ChatAssistant />
+            <ChatWidget />
             <PwaInstallPrompt />
             <Toaster />
           </AuthProvider>
