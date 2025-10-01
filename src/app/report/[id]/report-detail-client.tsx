@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -6,7 +7,7 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import type { Report, ReportComment } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, AlertTriangle, MapPin, Tag, ShieldAlert, Calendar } from "lucide-react";
+import { Loader2, AlertTriangle, MapPin, Tag, ShieldAlert, Calendar, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -182,11 +183,17 @@ export default function ReportDetailClient({ reportId }: { reportId: string }) {
                       </CardContent>
                   </Card>
                   <Card>
-                      <CardHeader>
+                      <CardHeader className="flex flex-row items-center justify-between">
                           <CardTitle className="flex items-center gap-2">
                               <MapPin className="h-5 w-5" />
                               Lokasi Masalah
                           </CardTitle>
+                          <Button asChild variant="outline" size="sm">
+                              <Link href={`https://www.google.com/maps/search/?api=1&query=${report.location.lat},${report.location.lng}`} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                  Buka di Google Maps
+                              </Link>
+                          </Button>
                       </CardHeader>
                       <CardContent>
                           <div className="h-80 w-full rounded-lg overflow-hidden border">
@@ -213,3 +220,5 @@ export default function ReportDetailClient({ reportId }: { reportId: string }) {
     </MainLayout>
   );
 }
+
+    
